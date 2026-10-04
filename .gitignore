@@ -9,3 +9,4 @@ local.properties
 *.keystore
 captures/
 .cxx/
+secrets.h
