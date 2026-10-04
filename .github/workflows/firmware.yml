@@ -1,0 +1,41 @@
+name: Build Firmware
+on:
+  push:
+    branches: [main, develop]
+    paths: ['firmware/**', 'platformio.ini', 'web/**', '.github/workflows/firmware.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install platformio esptool==4.7.0
+      - run: pio run
+      - name: Merge into one bin
+        run: |
+          B=.pio/build/esp32dev
+          A=$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
+          mkdir -p site
+          esptool.py --chip esp32 merge_bin -o site/firmware.bin --flash_mode dio --flash_freq 40m --flash_size 4MB 0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 $A 0x10000 $B/firmware.bin
+          cp web/index.html web/manifest.json site/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-merged
+          path: site/firmware.bin
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
