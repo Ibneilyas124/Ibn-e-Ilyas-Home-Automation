@@ -29,6 +29,7 @@ import com.ibneilyas.home.ui.screens.HomeScreen
 import com.ibneilyas.home.ui.screens.PlaceholderScreen
 import com.ibneilyas.home.ui.screens.RoomDetailScreen
 import com.ibneilyas.home.ui.screens.RoomsScreen
+import com.ibneilyas.home.ui.screens.SettingsScreen
 
 enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", Icons.Filled.Home),
@@ -80,7 +81,7 @@ fun AppNav() {
             }
             composable(Tab.Scenes.route) { PlaceholderScreen("Scenes") }
             composable(Tab.Devices.route) { PlaceholderScreen("Devices") }
-            composable(Tab.Settings.route) { PlaceholderScreen("Settings") }
+            composable(Tab.Settings.route) { SettingsScreen(vm) }
         }
     }
 }
