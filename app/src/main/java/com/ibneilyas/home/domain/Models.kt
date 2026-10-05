@@ -40,7 +40,7 @@ data class HomeData(
     fun devicesIn(roomId: String) = appliances.filter { it.roomId == roomId }
     fun isActive(a: Appliance) = isOnline(a) && stateOf(a).isOn
     fun activeIn(roomId: String) = devicesIn(roomId).count { isActive(it) }
-    fun nodeInRoom(roomId: String) = nodes.firstOrNull { it.roomId == roomId }
+    fun nodeInRoom(roomId: String) = nodes.firstOrNull { it.roomId == roomId } ?: devicesIn(roomId).firstNotNullOfOrNull { nodeOf(it) }
     val activeCount get() = appliances.count { isActive(it) }
     val onlineNodes get() = nodes.count { it.online }
 }

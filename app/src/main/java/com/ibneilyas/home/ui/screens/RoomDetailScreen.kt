@@ -30,12 +30,12 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
     }
     val node = d.nodeInRoom(roomId)
     if (renaming) {
-        TextDialog("Rename room", room.name, { vm.renameRoom(roomId, it); renaming = false }, { renaming = false })
+        RoomEditDialog("Edit room", room.name, room.iconKey, { n, i -> vm.editRoom(roomId, n, i); renaming = false }, { vm.deleteRoom(roomId); renaming = false; onBack() }, { renaming = false })
     }
     editing?.let { a ->
         ApplianceEditDialog(
-            a,
-            { n, t -> vm.editAppliance(a.id, n, t); editing = null },
+            a, d.rooms,
+            { n, t, r -> vm.editAppliance(a.id, n, t, r); editing = null },
             { vm.hideAppliance(a.id); editing = null },
             { editing = null }
         )
@@ -71,7 +71,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
         }
         if (edit) {
             item {
-                TextButton(onClick = { renaming = true }) { Text("Rename room") }
+                TextButton(onClick = { renaming = true }) { Text("Edit room") }
             }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->

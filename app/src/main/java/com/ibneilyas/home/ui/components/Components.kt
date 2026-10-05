@@ -21,6 +21,9 @@ fun roomIcon(key: String): ImageVector = when (key) {
     "bed" -> Icons.Filled.Bed
     "sofa" -> Icons.Filled.Weekend
     "kitchen" -> Icons.Filled.Kitchen
+    "bath" -> Icons.Filled.Bathtub
+    "garage" -> Icons.Filled.Garage
+    "workshop" -> Icons.Filled.Build
     else -> Icons.Filled.MeetingRoom
 }
 

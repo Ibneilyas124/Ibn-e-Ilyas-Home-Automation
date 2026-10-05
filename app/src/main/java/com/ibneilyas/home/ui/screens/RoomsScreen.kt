@@ -3,20 +3,24 @@ package com.ibneilyas.home.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.RoomCard
+import com.ibneilyas.home.ui.components.RoomEditDialog
 
 @Composable
 fun RoomsScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val d by vm.data.collectAsState()
+    var adding by remember { mutableStateOf(false) }
+    if (adding) {
+        RoomEditDialog("Add room", "", "room", { n, i -> vm.addRoom(n, i); adding = false }, null, { adding = false })
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
@@ -34,6 +38,13 @@ fun RoomsScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
                 online = d.nodeInRoom(room.id)?.online,
                 onClick = { onOpenRoom(room.id) }
             )
+        }
+        item {
+            Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Add room")
+            }
         }
     }
 }
