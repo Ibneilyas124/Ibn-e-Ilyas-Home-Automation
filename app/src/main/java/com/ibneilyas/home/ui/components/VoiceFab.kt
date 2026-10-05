@@ -31,7 +31,7 @@ fun VoiceFab(vm: HomeViewModel) {
     val listen: () -> Unit = {
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, when (lang) { "ur" -> "ur-PK"; "hi" -> "hi-IN"; else -> "en-US" })
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang == "ur") "ur-PK" else "en-US")
             .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a command, e.g. turn on zero bulb")
         try { launcher.launch(i) } catch (e: ActivityNotFoundException) { vm.say("Voice input is not available on this phone") }
     }
@@ -42,7 +42,7 @@ fun VoiceFab(vm: HomeViewModel) {
                 modifier = Modifier.widthIn(max = 280.dp)
             ) { Text(it, Modifier.padding(12.dp)) }
         }
-        OutlinedButton(onClick = { vm.setVoiceLang(when (lang) { "en" -> "ur"; "ur" -> "hi"; else -> "en" }) }) { Text(when (lang) { "ur" -> "اردو"; "hi" -> "हिं"; else -> "EN" }) }
+        OutlinedButton(onClick = { vm.setVoiceLang(if (lang == "ur") "en" else "ur") }) { Text(if (lang == "ur") "اردو" else "EN") }
         FloatingActionButton(onClick = listen) {
             Icon(Icons.Filled.Mic, contentDescription = "Voice command")
         }
