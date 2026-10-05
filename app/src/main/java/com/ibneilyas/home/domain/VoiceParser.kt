@@ -17,17 +17,7 @@ object VoiceParser {
     )
     private val digits = listOf("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 
-    private fun words(s: String): List<String> =
-        s.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim().split(" ")
-            .filter { it.isNotEmpty() }
-            .map { w ->
-                when {
-                    w.length == 1 && w[0].isDigit() -> digits[w[0] - '0']
-                    w.length > 3 && w.endsWith("s") && !w.endsWith("ss") -> w.dropLast(1)
-                    else -> w
-                }
-            }
-            .filter { it != "s" }
+    private fun words(s: String): List<String> = Lexicon.words(s)
 
     private fun sceneFor(set: Set<String>, scenes: List<Scene>): Scene? =
         scenes.filter { s -> words(s.name).let { it.isNotEmpty() && set.containsAll(it) } }

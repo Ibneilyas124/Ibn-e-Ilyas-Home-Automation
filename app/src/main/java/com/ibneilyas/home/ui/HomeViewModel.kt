@@ -272,4 +272,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             else -> "$label is now $v"
         }
     }
+
+    val voiceLang = MutableStateFlow(look.getString("vlang", "en") ?: "en")
+
+    fun setVoiceLang(k: String) {
+        look.edit().putString("vlang", k).apply()
+        voiceLang.value = k
+    }
 }
