@@ -102,7 +102,7 @@ void setup() {
   MDNS.begin(deviceId.c_str());
   MDNS.addService("ibnhome", "tcp", 80);
   const char* keys[] = {"Authorization"};
-&
+  server.collectHeaders(keys, 1);
   schedSetup();
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
@@ -125,7 +125,7 @@ void setup() {
 }
 
 void loop() {
-&
+  server.handleClient();
   schedTick();
   if (WiFi.status() != WL_CONNECTED) { WiFi.reconnect(); delay(3000); }
 }
