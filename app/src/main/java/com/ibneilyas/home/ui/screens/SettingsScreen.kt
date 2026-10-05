@@ -26,6 +26,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         OutlinedButton(onClick = { vm.useReal() }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
             Text("Use Real ESP32 mode")
         }
+        OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
         Spacer(Modifier.height(16.dp))
         Text(BrandConfig.COMPANY_NAME, fontWeight = FontWeight.SemiBold)
         Text(BrandConfig.OWNER_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant)

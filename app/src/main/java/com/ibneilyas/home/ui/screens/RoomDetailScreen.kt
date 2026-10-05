@@ -5,30 +5,41 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ibneilyas.home.domain.Appliance
 import com.ibneilyas.home.ui.HomeViewModel
-import com.ibneilyas.home.ui.components.ApplianceTile
-import com.ibneilyas.home.ui.components.NodeStatus
+import com.ibneilyas.home.ui.components.*
 
 @Composable
 fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
     val d by vm.data.collectAsState()
+    var edit by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<Appliance?>(null) }
     val room = d.rooms.firstOrNull { it.id == roomId }
     if (room == null) {
         Text("Room not found", Modifier.padding(24.dp))
         return
     }
     val node = d.nodeInRoom(roomId)
+    if (renaming) {
+        TextDialog("Rename room", room.name, { vm.renameRoom(roomId, it); renaming = false }, { renaming = false })
+    }
+    editing?.let { a ->
+        ApplianceEditDialog(
+            a,
+            { n, t -> vm.editAppliance(a.id, n, t); editing = null },
+            { vm.hideAppliance(a.id); editing = null },
+            { editing = null }
+        )
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 12.dp, end = 24.dp, top = 12.dp, bottom = 24.dp),
@@ -39,7 +50,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Column {
+                Column(Modifier.weight(1f)) {
                     Text(room.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     NodeStatus(node?.online)
                     if (node != null && !node.online) {
@@ -50,11 +61,24 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
                         )
                     }
                 }
+                IconButton(onClick = { edit = !edit }) {
+                    Icon(
+                        if (edit) Icons.Filled.Check else Icons.Filled.Edit,
+                        contentDescription = if (edit) "Done editing" else "Edit"
+                    )
+                }
+            }
+        }
+        if (edit) {
+            item {
+                TextButton(onClick = { renaming = true }) { Text("Rename room") }
             }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->
             Box(Modifier.padding(start = 12.dp)) {
-                ApplianceTile(a, d.stateOf(a), d.isOnline(a)) { vm.toggle(a.id) }
+                ApplianceTile(a, d.stateOf(a), d.isOnline(a)) {
+                    if (edit) { editing = a } else { vm.toggle(a.id) }
+                }
             }
         }
     }
