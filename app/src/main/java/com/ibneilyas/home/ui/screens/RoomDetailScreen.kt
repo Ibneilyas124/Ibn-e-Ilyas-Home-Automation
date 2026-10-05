@@ -42,7 +42,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
     }
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 12.dp, end = 24.dp, top = 12.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 12.dp, end = 24.dp, top = 12.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {

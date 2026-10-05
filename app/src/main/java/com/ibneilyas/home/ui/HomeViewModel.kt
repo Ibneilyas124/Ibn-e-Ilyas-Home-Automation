@@ -13,6 +13,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.ibneilyas.home.domain.Appliance
+import com.ibneilyas.home.domain.CmdState
+import com.ibneilyas.home.domain.VoiceParser
+import com.ibneilyas.home.domain.VoiceResult
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import com.ibneilyas.home.core.BrandConfig
@@ -228,5 +233,43 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun setAccent(k: String) {
         look.edit().putString("accent", k).apply()
         accent.value = k
+    }
+
+    val voiceMessage = MutableStateFlow<String?>(null)
+    fun say(s: String) { voiceMessage.value = s }
+    fun clearVoice() { voiceMessage.value = null }
+
+    fun voiceCommand(text: String) {
+        viewModelScope.launch {
+            when (val r = VoiceParser.parse(text, data.value, scenes.value)) {
+                is VoiceResult.Message -> say(r.text)
+                is VoiceResult.RunScene -> { runScene(r.s); say("Running ${r.s.name}") }
+                is VoiceResult.Device -> say(applyVoice(listOf(r.a), r.on, r.a.name))
+                is VoiceResult.Group -> say(applyVoice(r.list, r.on, r.label))
+            }
+        }
+    }
+
+    private suspend fun applyVoice(list: List<Appliance>, on: Boolean, label: String): String {
+        var done = 0
+        var offline = 0
+        var failed = 0
+        for (a in list) {
+            val d = data.value
+            if (!d.isOnline(a)) { offline++; continue }
+            if (d.stateOf(a).isOn != on) {
+                repo.value.toggle(a.id)
+                val after = withTimeoutOrNull(5000) { data.first { it.stateOf(a).cmd != CmdState.SENDING } }
+                if (after == null || after.stateOf(a).cmd == CmdState.FAILED) { failed++; continue }
+            }
+            done++
+        }
+        val v = if (on) "ON" else "OFF"
+        return when {
+            failed > 0 -> "Could not turn $v $label ($failed failed)"
+            done == 0 -> "$label is offline"
+            offline > 0 -> "$label $v, $offline offline skipped"
+            else -> "$label is now $v"
+        }
     }
 }

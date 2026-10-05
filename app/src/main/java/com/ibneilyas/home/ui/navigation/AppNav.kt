@@ -24,7 +24,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.ibneilyas.home.ui.HomeViewModel
+&
+import com.ibneilyas.home.ui.components.VoiceFab
 import com.ibneilyas.home.ui.screens.HomeScreen
 import com.ibneilyas.home.ui.screens.SchedulesScreen
 import com.ibneilyas.home.ui.screens.ScenesScreen
@@ -51,6 +52,7 @@ fun AppNav() {
     val openRoom: (String) -> Unit = { id -> nav.navigate("room/$id") }
 
     Scaffold(
+        floatingActionButton = { if (current in listOf("home", "rooms", "scenes", "devices") || current?.startsWith("room/") == true) VoiceFab(vm) },
         bottomBar = {
             NavigationBar {
                 Tab.values().forEach { tab ->
