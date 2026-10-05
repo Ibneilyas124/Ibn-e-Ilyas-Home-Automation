@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.NodeStatus
+import com.ibneilyas.home.ui.components.TextDialog
 
 @Composable
 fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
@@ -22,6 +23,10 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     var room by remember { mutableStateOf("") }
     var ip by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
+    var tokenFor by remember { mutableStateOf<String?>(null) }
+    tokenFor?.let { id ->
+        TextDialog("Enter token", "", { vm.setToken(id, it); tokenFor = null }, { tokenFor = null })
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
@@ -48,6 +53,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                         Text(n.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!d.mockMode) NodeStatus(online)
                         if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
+                        TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }
                     }
                     IconButton(onClick = { vm.removeNode(n.id) }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Remove")

@@ -13,6 +13,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
+import org.json.JSONArray
+import org.json.JSONObject
+import com.ibneilyas.home.core.BrandConfig
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val store = NodeStore(app)
@@ -146,6 +149,70 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             sceneMessage.value =
                 if (skipped > 0) "${scene.name}: done, $skipped offline device(s) skipped"
                 else "${scene.name}: done"
+        }
+    }
+
+    private val brand = app.getSharedPreferences("brand", 0)
+    val subtitle = MutableStateFlow(brand.getString("subtitle", null) ?: BrandConfig.DEFAULT_SUBTITLE)
+
+    fun setSubtitle(s: String) {
+        val v = s.trim().ifBlank { BrandConfig.DEFAULT_SUBTITLE }
+        brand.edit().putString("subtitle", v).apply()
+        subtitle.value = v
+    }
+
+    fun setToken(id: String, token: String) {
+        store.save(store.load().map { if (it.id == id) it.copy(token = token.trim()) else it })
+        swap()
+    }
+
+    fun exportJson(): String {
+        val ctx = getApplication<Application>()
+        val j = JSONObject()
+        j.put("app", "IbnEIlyasHome")
+        j.put("version", 1)
+        j.put("subtitle", subtitle.value)
+        val na = JSONArray()
+        store.load().forEach { na.put(JSONObject().put("id", it.id).put("room", it.room).put("ip", it.ip)) }
+        j.put("nodes", na)
+        j.put("overrides", JSONObject(ctx.getSharedPreferences("overrides", 0).getString("json", "{}") ?: "{}"))
+        j.put("scenes", JSONArray(ctx.getSharedPreferences("scenes", 0).getString("list", "[]") ?: "[]"))
+        return j.toString(2)
+    }
+
+    fun importJson(text: String): String {
+        val ctx = getApplication<Application>()
+        val op = ctx.getSharedPreferences("overrides", 0)
+        val sp = ctx.getSharedPreferences("scenes", 0)
+        val oldO = op.getString("json", "{}") ?: "{}"
+        val oldS = sp.getString("list", "[]") ?: "[]"
+        try {
+            val j = JSONObject(text)
+            if (j.optString("app") != "IbnEIlyasHome" || j.optInt("version", 0) != 1) {
+                return "Not a valid backup file"
+            }
+            val old = store.load().associateBy { it.id }
+            val na = j.getJSONArray("nodes")
+            val list = List(na.length()) {
+                val o = na.getJSONObject(it)
+                val id = o.getString("id")
+                NodeConfig(id, o.getString("room"), o.getString("ip"), old[id]?.token ?: "")
+            }
+            op.edit().putString("json", j.getJSONObject("overrides").toString()).apply()
+            sp.edit().putString("list", j.getJSONArray("scenes").toString()).apply()
+            val o2 = ostore.load()
+            val s2 = sstore.load()
+            store.save(list)
+            overrides.value = o2
+            scenes.value = s2
+            setSubtitle(j.optString("subtitle", ""))
+            swap()
+            val missing = list.count { it.token.isBlank() }
+            return if (missing > 0) "Restored. Set token for $missing ESP32 in Devices." else "Restored."
+        } catch (e: Exception) {
+            op.edit().putString("json", oldO).apply()
+            sp.edit().putString("list", oldS).apply()
+            return "Backup file is damaged. Nothing was changed."
         }
     }
 }

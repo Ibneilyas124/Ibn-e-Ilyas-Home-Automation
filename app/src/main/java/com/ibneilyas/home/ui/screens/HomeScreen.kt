@@ -19,6 +19,7 @@ import com.ibneilyas.home.ui.components.StatTile
 @Composable
 fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val d by vm.data.collectAsState()
+    val subtitle by vm.subtitle.collectAsState()
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(24.dp),
@@ -31,7 +32,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                BrandConfig.DEFAULT_SUBTITLE,
+                subtitle,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.primary
             )
