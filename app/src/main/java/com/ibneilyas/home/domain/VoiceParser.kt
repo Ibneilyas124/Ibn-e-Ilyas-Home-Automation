@@ -41,6 +41,35 @@ object VoiceParser {
         return pool.filter { score(it) == best }
     }
 
+
+    private val core = setOf(
+        "on", "off", "light", "bulb", "fan", "socket", "plug", "room", "all", "please",
+        "turn", "switch", "start", "stop", "enable", "disable", "open", "close", "good", "night", "home", "mode"
+    )
+
+    private fun lev(a: String, b: String): Int {
+        val dp = IntArray(b.length + 1) { it }
+        for (i in 1..a.length) {
+            var prev = dp[0]
+            dp[0] = i
+            for (j in 1..b.length) {
+                val tmp = dp[j]
+                dp[j] = minOf(dp[j] + 1, dp[j - 1] + 1, prev + (if (a[i - 1] == b[j - 1]) 0 else 1))
+                prev = tmp
+            }
+        }
+        return dp[b.length]
+    }
+
+    private fun fuzzy(ws: List<String>, d: HomeData): List<String> {
+        val known = (d.rooms.map { it.name } + d.appliances.map { it.name })
+            .flatMap { words(it) }.filter { it.length >= 4 }.toSet() - core
+        return ws.map { w ->
+            if (w in known || w in core || w.length < 4 || !w.all { it in 'a'..'z' }) w
+            else known.filter { lev(w, it) <= 2 && lev(w, it) < w.length / 2 }
+                .minByOrNull { lev(w, it) } ?: w
+        }
+    }
     fun parse(text: String, d: HomeData, scenes: List<Scene>): VoiceResult {
         val set = fuzzy(words(text), d).toSet()
         val on = set.any { it in onWords }

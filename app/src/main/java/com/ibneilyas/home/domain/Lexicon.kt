@@ -80,6 +80,21 @@ object Lexicon {
         add("sheraz", "شیراز")
     }
 
+
+    // URDU + ENGLISH MIX
+    init {
+        add("on", "اون", "اؤن")
+        add("off", "اوف", "اؤف", "اف")
+        add("turn", "ٹرن")
+        add("switch", "سوئچ", "سویچ")
+        add("light", "لائیٹ", "لائیٹس")
+    }
+
+    init {
+        add("sarfraz", "سرفراز", "سرفرز", "سرفراج", "فراز", "فراج")
+        add("sarfraz", "sarfaraz", "sarfarz", "sarfraaz", "sarfraj", "farraz", "faraz")
+        add("sheraz", "شیراز", "شراز", "sheeraz", "sherazz", "shiraz", "sheraj")
+    }
     fun words(s: String): List<String> =
         norm(s).split(Regex("[^\\p{L}\\p{N}]+"))
             .filter { it.isNotEmpty() }
