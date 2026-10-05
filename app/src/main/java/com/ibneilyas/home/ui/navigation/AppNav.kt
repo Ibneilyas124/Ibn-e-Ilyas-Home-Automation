@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.screens.HomeScreen
+import com.ibneilyas.home.ui.screens.DevicesScreen
 import com.ibneilyas.home.ui.screens.PlaceholderScreen
 import com.ibneilyas.home.ui.screens.RoomDetailScreen
 import com.ibneilyas.home.ui.screens.RoomsScreen
@@ -80,7 +81,7 @@ fun AppNav() {
                 }
             }
             composable(Tab.Scenes.route) { PlaceholderScreen("Scenes") }
-            composable(Tab.Devices.route) { PlaceholderScreen("Devices") }
+            composable(Tab.Devices.route) { DevicesScreen(vm) }
             composable(Tab.Settings.route) { SettingsScreen(vm) }
         }
     }
