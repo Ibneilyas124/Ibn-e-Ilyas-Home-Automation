@@ -292,4 +292,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    suspend fun runVoice(alts: List<String>): String {
+        withTimeoutOrNull(4000) { data.first { it.appliances.isNotEmpty() } }
+        val d = data.value
+        val (r, heard) = VoiceParser.parseBest(alts, d, scenes.value, voiceRoom.value)
+        val text = when (r) {
+            is VoiceResult.Message -> r.text
+            is VoiceResult.SelectRoom -> { setVoiceRoom(r.room.id); "Voice room: ${r.room.name}" }
+            is VoiceResult.RunScene -> { runScene(r.s); "Running ${r.s.name}" }
+            is VoiceResult.Device -> {
+                val rn = d.rooms.firstOrNull { it.id == r.a.roomId }?.name
+                applyVoice(listOf(r.a), r.on, if (rn != null) "${r.a.name} ($rn)" else r.a.name)
+            }
+            is VoiceResult.Group -> applyVoice(r.list, r.on, r.label)
+        }
+        return if (text.contains("Heard:") || heard.isEmpty()) text else "$text  [heard: $heard]"
+    }
+
+    fun voiceAlternatives(alts: List<String>) {
+        viewModelScope.launch { say(runVoice(alts)) }
+    }
 }

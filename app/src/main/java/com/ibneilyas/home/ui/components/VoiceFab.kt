@@ -30,14 +30,15 @@ fun VoiceFab(vm: HomeViewModel) {
     val roomName = d.rooms.firstOrNull { it.id == vroom }?.name
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         if (r.resultCode == Activity.RESULT_OK) {
-            val said = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            if (said != null) vm.voiceCommand(said) else vm.say("I did not catch that")
+            val said = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!said.isNullOrEmpty()) vm.voiceAlternatives(said) else vm.say("I did not catch that")
         }
     }
     LaunchedEffect(msg) { if (msg != null) { delay(6000); vm.clearVoice() } }
     val listen: () -> Unit = {
         val i = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, if (lang == "ur") "ur-PK" else "en-US")
             .putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a command, e.g. fan off karo")
         try { launcher.launch(i) } catch (e: ActivityNotFoundException) { vm.say("Voice input is not available on this phone") }

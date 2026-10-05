@@ -115,6 +115,16 @@ object Lexicon {
         add("cooler", "کولر", "کولیر")
         add("select", "selected", "سلیکٹ", "منتخب", "جاؤ", "جاو", "jao", "jaao", "jayen", "chuno", "chunein")
     }
+
+    // VOICE V3
+    init {
+        add("on", "own", "aan", "awn", "oon", "aun", "chalo", "challo", "challao", "chalow", "chalau", "chaloo")
+        add("off", "aff", "oaf", "ouf", "oof", "awf", "auf", "uff", "ban", "bund", "bunt", "baand", "bhand")
+        add("please", "carro", "caro", "karu", "kara", "curo", "kuro", "cro", "karoo", "karow", "kaaro", "karao", "kru", "kro")
+        add("bulb", "bulp", "balb", "bolb", "bulbb")
+        add("socket", "sokat", "soket", "sacket", "sockit")
+        add("zero", "ziro", "jiro", "jeero", "zeero", "zirow")
+    }
     fun words(s: String): List<String> =
         norm(s).split(Regex("[^\\p{L}\\p{N}]+"))
             .filter { it.isNotEmpty() }

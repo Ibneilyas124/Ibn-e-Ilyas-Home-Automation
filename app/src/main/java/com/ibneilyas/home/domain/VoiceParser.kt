@@ -16,19 +16,13 @@ object VoiceParser {
         "please", "turn", "switch", "the", "a", "an", "to", "set", "kindly", "can", "you",
         "my", "of", "in", "for", "and", "karo", "kar", "do", "is", "it"
     )
-    private val generic = setOf("fan", "light", "socket")
+    private val generic = setOf("fan", "light", "bulb", "socket", "plug")
     private val core = setOf(
         "on", "off", "light", "bulb", "fan", "socket", "plug", "room", "all", "please", "select",
         "turn", "switch", "start", "stop", "enable", "disable", "open", "close", "good", "night", "home", "mode"
     )
 
-    private fun canon(w: String): String = when (w) {
-        "bulb" -> "light"
-        "plug" -> "socket"
-        else -> w
-    }
-
-    private fun words(s: String): List<String> = Lexicon.words(s).map { canon(it) }
+    private fun words(s: String): List<String> = Lexicon.words(s)
 
     private fun lev(a: String, b: String): Int {
         val dp = IntArray(b.length + 1) { it }
@@ -48,12 +42,15 @@ object VoiceParser {
         val known = (d.rooms.map { it.name } + d.appliances.map { it.name })
             .flatMap { words(it) }.filter { it.length >= 4 }.toSet() - core
         return ws.map { w ->
-            if (w in known || w in core || w.length < 4 || !w.all { it in 'a'..'z' }) {
-                w
-            } else {
-                val best = known.minOfOrNull { lev(w, it) } ?: 99
-                val near = known.filter { lev(w, it) == best }
-                if (best <= 2 && best < w.length / 2 && near.size == 1) near[0] else w
+            when {
+                w in known || w in core || w.length < 3 || !w.all { it in 'a'..'z' } -> w
+                lev(w, "karo") <= 1 || lev(w, "kardo") <= 1 -> "please"
+                w.length < 4 -> w
+                else -> {
+                    val best = known.minOfOrNull { lev(w, it) } ?: 99
+                    val near = known.filter { lev(w, it) == best }
+                    if (best <= 2 && best < w.length / 2 && near.size == 1) near[0] else w
+                }
             }
         }
     }
@@ -61,9 +58,9 @@ object VoiceParser {
     private fun keys(a: Appliance): Set<String> {
         val k = words(a.name).toMutableSet()
         when (a.type) {
-            ApplianceType.LIGHT -> k.add("light")
+            ApplianceType.LIGHT -> { k.add("light"); k.add("bulb") }
             ApplianceType.FAN -> k.add("fan")
-            ApplianceType.SOCKET -> k.add("socket")
+            ApplianceType.SOCKET -> { k.add("socket"); k.add("plug") }
             ApplianceType.OTHER -> {}
         }
         return k
@@ -83,7 +80,9 @@ object VoiceParser {
     private fun pick(m: List<Appliance>, q: Set<String>): List<Appliance> {
         if (m.size < 2) return m
         val exact = m.filter { words(it.name).toSet() == q }
-        return if (exact.size == 1) exact else m
+        if (exact.size == 1) return exact
+        val named = m.filter { words(it.name).containsAll(q) }
+        return if (named.size == 1) named else m
     }
 
     private fun sceneFor(set: Set<String>, scenes: List<Scene>): Scene? =
@@ -109,13 +108,13 @@ object VoiceParser {
     private fun selectRoom(found: List<Room>, d: HomeData): VoiceResult = when {
         found.size == 1 -> VoiceResult.SelectRoom(found[0])
         found.size > 1 -> VoiceResult.Message("Which room? " + found.take(3).joinToString(" or ") { it.name })
-        else -> VoiceResult.Message("Which room? Say for example: " + (d.rooms.firstOrNull()?.name ?: "Sarfraz's Room") + " select karo")
+        else -> VoiceResult.Message("Say which room, for example: " + (d.rooms.firstOrNull()?.name ?: "Sarfraz's Room") + " select karo")
     }
 
     fun parse(text: String, d: HomeData, scenes: List<Scene>, activeRoomId: String? = null): VoiceResult {
         val set = fuzzy(words(text), d).toSet()
         val on = set.any { it in onWords }
-        val off = set.any { it in offWords }
+        val off = set.any { it in offWords } || (!on && "of" in set && "please" in set)
         val found = roomsIn(set, d)
         if ("select" in set) return selectRoom(found, d)
         if (found.size > 1) {
@@ -124,9 +123,9 @@ object VoiceParser {
         val explicit = found.firstOrNull()
         val active = d.rooms.firstOrNull { it.id == activeRoomId }
         val type = when {
-            "light" in set -> ApplianceType.LIGHT
+            "light" in set || "bulb" in set -> ApplianceType.LIGHT
             "fan" in set -> ApplianceType.FAN
-            "socket" in set -> ApplianceType.SOCKET
+            "socket" in set || "plug" in set -> ApplianceType.SOCKET
             else -> null
         }
         if ("all" in set && type != null && on != off) {
@@ -143,7 +142,7 @@ object VoiceParser {
         if (on && off) return VoiceResult.Message("Please say either ON or OFF, not both")
         val roomWords = found.flatMap { distinct(it) }.toSet()
         val q = set - ignore - onWords - offWords - roomWords - setOf("all", "room", "select")
-        if (q.isEmpty()) return VoiceResult.Message("Which device? Say for example: fan off karo")
+        if (q.isEmpty()) return VoiceResult.Message("Say which device, for example: fan off karo")
         val scope = explicit ?: active
         val what = q.firstOrNull { it in generic } ?: "one"
         if (scope != null) {
@@ -162,5 +161,21 @@ object VoiceParser {
         }
         if (g.size == 1) return VoiceResult.Device(g[0], on)
         return ask(g, d, what, true)
+    }
+
+    /** Tries recognizer alternatives. A clear question ("Which fan?") on the top guess always wins. */
+    fun parseBest(alts: List<String>, d: HomeData, scenes: List<Scene>, activeRoomId: String?): Pair<VoiceResult, String> {
+        val list = alts.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
+        if (list.isEmpty()) return Pair(VoiceResult.Message("I did not catch that"), "")
+        val topLen = list[0].split(" ").size
+        var first: Pair<VoiceResult, String>? = null
+        for ((i, t) in list.withIndex()) {
+            if (i > 0 && t.split(" ").size != topLen) continue
+            val r = parse(t, d, scenes, activeRoomId)
+            if (r !is VoiceResult.Message) return Pair(r, t)
+            if (i == 0 && r.text.startsWith("Which ")) return Pair(r, t)
+            if (first == null) first = Pair(r, t)
+        }
+        return first ?: Pair(VoiceResult.Message("I did not catch that"), list[0])
     }
 }
