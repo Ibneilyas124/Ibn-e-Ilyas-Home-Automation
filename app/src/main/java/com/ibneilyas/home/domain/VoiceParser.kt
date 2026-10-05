@@ -42,7 +42,7 @@ object VoiceParser {
     }
 
     fun parse(text: String, d: HomeData, scenes: List<Scene>): VoiceResult {
-        val set = words(text).toSet()
+        val set = fuzzy(words(text), d).toSet()
         val on = set.any { it in onWords }
         val off = set.any { it in offWords }
         val type = when {

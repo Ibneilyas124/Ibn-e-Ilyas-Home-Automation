@@ -10,7 +10,7 @@ object Lexicon {
         for (c in s.lowercase()) {
             val code = c.code
             when {
-                code in 0x064B..0x065F || code == 0x0670 || code == 0x0640 -> {}
+                code in 0x064B..0x065F || code == 0x0670 || code == 0x0640 || code == 0x093C -> {}
                 code in 0x200B..0x200F -> {}
                 c == '\u064A' || c == '\u0649' -> sb.append('\u06CC')
                 c == '\u0643' -> sb.append('\u06A9')
