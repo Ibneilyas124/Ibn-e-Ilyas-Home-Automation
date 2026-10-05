@@ -40,4 +40,24 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
             null
         }
     }
+
+    private suspend fun text(r: Request): String? = withContext(Dispatchers.IO) {
+        try {
+            http.newCall(r).execute().use { resp ->
+                if (resp.isSuccessful) resp.body!!.string() else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun schedules(): String? = text(req("/api/schedules").build())
+
+    suspend fun setSchedules(data: String): String? {
+        val body = "data=${java.net.URLEncoder.encode(data, "UTF-8")}"
+            .toRequestBody("application/x-www-form-urlencoded".toMediaType())
+        return text(req("/api/schedules").post(body).build())
+    }
+
+    suspend fun time(): String? = text(req("/api/time").build())
 }

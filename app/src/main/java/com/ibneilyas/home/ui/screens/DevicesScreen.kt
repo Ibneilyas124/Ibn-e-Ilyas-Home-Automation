@@ -16,7 +16,7 @@ import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.NodeStatus
 
 @Composable
-fun DevicesScreen(vm: HomeViewModel) {
+fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     val nodes by vm.nodes.collectAsState()
     val d by vm.data.collectAsState()
     var room by remember { mutableStateOf("") }
@@ -47,6 +47,7 @@ fun DevicesScreen(vm: HomeViewModel) {
                         Text(n.room, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(n.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!d.mockMode) NodeStatus(online)
+                        if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
                     }
                     IconButton(onClick = { vm.removeNode(n.id) }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Remove")
