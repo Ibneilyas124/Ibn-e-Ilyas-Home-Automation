@@ -44,3 +44,7 @@ data class HomeData(
     val activeCount get() = appliances.count { isActive(it) }
     val onlineNodes get() = nodes.count { it.online }
 }
+
+data class SceneAction(val applianceId: String, val on: Boolean)
+
+data class Scene(val id: String, val name: String, val actions: List<SceneAction>)

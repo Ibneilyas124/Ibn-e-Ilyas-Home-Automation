@@ -7,6 +7,8 @@ import com.ibneilyas.home.data.*
 import com.ibneilyas.home.domain.ApplianceType
 import com.ibneilyas.home.domain.HomeData
 import com.ibneilyas.home.domain.Room
+import com.ibneilyas.home.domain.Scene
+import com.ibneilyas.home.domain.SceneAction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -110,4 +112,40 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun hideAppliance(id: String) = change { it.copy(hidden = it.hidden + id) }
 
     fun restoreHidden() = change { it.copy(hidden = emptySet(), hiddenRooms = emptySet()) }
+
+    private val sstore = SceneStore(app)
+    val scenes = MutableStateFlow(sstore.load())
+    val runningScene = MutableStateFlow<String?>(null)
+    val sceneMessage = MutableStateFlow<String?>(null)
+
+    fun addScene(name: String, actions: List<SceneAction>) {
+        val n = scenes.value + Scene("s-" + UUID.randomUUID().toString().take(6), name, actions)
+        sstore.save(n)
+        scenes.value = n
+    }
+
+    fun deleteScene(id: String) {
+        val n = scenes.value.filter { it.id != id }
+        sstore.save(n)
+        scenes.value = n
+    }
+
+    fun runScene(scene: Scene) {
+        if (runningScene.value != null) return
+        viewModelScope.launch {
+            runningScene.value = scene.id
+            sceneMessage.value = null
+            var skipped = 0
+            for (a in scene.actions) {
+                val d = data.value
+                val app = d.appliances.firstOrNull { it.id == a.applianceId } ?: continue
+                if (!d.isOnline(app)) { skipped++; continue }
+                if (d.stateOf(app).isOn != a.on) repo.value.toggle(app.id)
+            }
+            runningScene.value = null
+            sceneMessage.value =
+                if (skipped > 0) "${scene.name}: done, $skipped offline device(s) skipped"
+                else "${scene.name}: done"
+        }
+    }
 }
