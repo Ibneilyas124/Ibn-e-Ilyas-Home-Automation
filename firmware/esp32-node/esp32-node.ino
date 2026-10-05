@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.2.0"
+#define FW_VERSION "0.3.0"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19};
@@ -79,6 +79,8 @@ void connectWifi() {
   runPortal();
 }
 
+#include "schedules.h"
+
 void setup() {
   Serial.begin(115200);
   for (int i = 0; i < N; i++) {
@@ -100,7 +102,8 @@ void setup() {
   MDNS.begin(deviceId.c_str());
   MDNS.addService("ibnhome", "tcp", 80);
   const char* keys[] = {"Authorization"};
-  server.collectHeaders(keys, 1);
+&
+  schedSetup();
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
       "\",\"firmware\":\"" FW_VERSION "\",\"channels\":" + String(N) + "}");
@@ -122,6 +125,7 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();
+&
+  schedTick();
   if (WiFi.status() != WL_CONNECTED) { WiFi.reconnect(); delay(3000); }
 }
