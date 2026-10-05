@@ -239,16 +239,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun say(s: String) { voiceMessage.value = s }
     fun clearVoice() { voiceMessage.value = null }
 
-    fun voiceCommand(text: String) {
-        viewModelScope.launch {
-            when (val r = VoiceParser.parse(text, data.value, scenes.value)) {
-                is VoiceResult.Message -> say(r.text)
-                is VoiceResult.RunScene -> { runScene(r.s); say("Running ${r.s.name}") }
-                is VoiceResult.Device -> say(applyVoice(listOf(r.a), r.on, r.a.name))
-                is VoiceResult.Group -> say(applyVoice(r.list, r.on, r.label))
-            }
-        }
-    }
 
     private suspend fun applyVoice(list: List<Appliance>, on: Boolean, label: String): String {
         var done = 0
@@ -278,5 +268,28 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun setVoiceLang(k: String) {
         look.edit().putString("vlang", k).apply()
         voiceLang.value = k
+    }
+
+    val voiceRoom = MutableStateFlow<String?>(look.getString("voiceRoom", null))
+
+    fun setVoiceRoom(id: String?) {
+        look.edit().putString("voiceRoom", id).apply()
+        voiceRoom.value = id
+    }
+
+    fun voiceCommand(text: String) {
+        viewModelScope.launch {
+            val d = data.value
+            when (val r = VoiceParser.parse(text, d, scenes.value, voiceRoom.value)) {
+                is VoiceResult.Message -> say(r.text)
+                is VoiceResult.SelectRoom -> { setVoiceRoom(r.room.id); say("Voice room: ${r.room.name}") }
+                is VoiceResult.RunScene -> { runScene(r.s); say("Running ${r.s.name}") }
+                is VoiceResult.Device -> {
+                    val rn = d.rooms.firstOrNull { it.id == r.a.roomId }?.name
+                    say(applyVoice(listOf(r.a), r.on, if (rn != null) "${r.a.name} ($rn)" else r.a.name))
+                }
+                is VoiceResult.Group -> say(applyVoice(r.list, r.on, r.label))
+            }
+        }
     }
 }

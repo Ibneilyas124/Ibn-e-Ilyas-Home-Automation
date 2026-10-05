@@ -95,6 +95,26 @@ object Lexicon {
         add("sarfraz", "sarfaraz", "sarfarz", "sarfraaz", "sarfraj", "farraz", "faraz")
         add("sheraz", "شیراز", "شراز", "sheeraz", "sherazz", "shiraz", "sheraj")
     }
+
+    // VOICE V2
+    init {
+        add("please", "kardo", "karden", "krdo", "kro", "krna", "karni", "karein", "karen", "karain")
+        add("please", "wala", "wali", "wale", "walay", "ji", "yaar", "bhai", "jaan", "abhi", "jaldi", "bas")
+        add("please", "se", "par", "pe", "me", "ap", "aap", "sir", "ho", "dena", "dijiye", "just", "now")
+        add("please", "wo", "woh", "ye", "yeh", "usay", "isay", "isko", "usko")
+        add("please", "والا", "والی", "والے", "جی", "یار", "بھائی", "ابھی", "جلدی", "ذرا", "ذرہ")
+        add("please", "سے", "پر", "پہ", "اسے", "اس", "وہ", "یہ", "کردو", "کریں", "کرنا", "کرنی", "دینا", "ہو")
+    }
+
+    init {
+        add("fan", "fann", "faan", "fen", "pankah", "pankhaa", "punkha", "پنکھہ", "فان")
+        add("light", "lite", "lyt", "lait", "laight", "لایٹ")
+        add("tv", "ٹی", "ٹیوی", "ٹیلی", "ٹیلیویژن", "television", "tele", "teevee")
+        add("ac", "ایسی", "اے", "conditioner", "کنڈیشنر", "airconditioner")
+        add("please", "air", "ایئر", "ائیر", "سی", "وی")
+        add("cooler", "کولر", "کولیر")
+        add("select", "selected", "سلیکٹ", "منتخب", "جاؤ", "جاو", "jao", "jaao", "jayen", "chuno", "chunein")
+    }
     fun words(s: String): List<String> =
         norm(s).split(Regex("[^\\p{L}\\p{N}]+"))
             .filter { it.isNotEmpty() }

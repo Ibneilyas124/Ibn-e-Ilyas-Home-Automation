@@ -20,8 +20,16 @@ jobs:
       - name: Show errors
         if: failure()
         run: |
-          grep -E "^e: |What went wrong" -A4 build.log | head -40
+          grep -E "^e: |What went wrong" -A4 build.log | head -40 || true
+          tail -n 30 build.log
       - uses: actions/upload-artifact@v4
         with:
           name: IbnEIlyasHome-debug
           path: app/build/outputs/apk/debug/*.apk
+      - name: Voice tests
+        run: gradle testDebugUnitTest --console=plain > test.log 2>&1
+      - name: Show test failures
+        if: failure() && hashFiles('test.log') != ''
+        run: |
+          grep -E "FAILED|AssertionError" -A3 test.log | head -60 || true
+          tail -n 20 test.log
