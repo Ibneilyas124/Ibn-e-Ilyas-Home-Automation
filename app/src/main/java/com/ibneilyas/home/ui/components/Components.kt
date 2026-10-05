@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -133,7 +135,7 @@ fun ApplianceTile(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = container, contentColor = content),
         border = if (!online) BorderStroke(1.dp, cs.error) else null,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp).semantics(mergeDescendants = true) { contentDescription = "${appliance.name}, $subtitle" }
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),

@@ -215,4 +215,18 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             return "Backup file is damaged. Nothing was changed."
         }
     }
+
+    private val look = app.getSharedPreferences("look", 0)
+    val dark = MutableStateFlow(look.getBoolean("dark", true))
+    val accent = MutableStateFlow(look.getString("accent", "blue") ?: "blue")
+
+    fun setDark(v: Boolean) {
+        look.edit().putBoolean("dark", v).apply()
+        dark.value = v
+    }
+
+    fun setAccent(k: String) {
+        look.edit().putString("accent", k).apply()
+        accent.value = k
+    }
 }

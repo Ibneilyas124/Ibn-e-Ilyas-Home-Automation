@@ -63,6 +63,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         OutlinedButton(onClick = { vm.useReal() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Real ESP32 mode") }
         OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
         Spacer(Modifier.height(8.dp))
+        AppearanceSection(vm)
         Text("Backup", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(onClick = { exporter.launch("home_config.json") }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Export configuration") }
         OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Import configuration") }
