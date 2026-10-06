@@ -1,1 +1,1 @@
-{"name":"Ibn e Ilyas Node","version":"0.3.0","new_install_prompt_erase":false,"builds":[{"chipFamily":"ESP32","parts":[{"path":"firmware.bin","offset":0}]}]}
+{"name":"Ibn e Ilyas Node","version":"0.4.0","new_install_prompt_erase":false,"builds":[{"chipFamily":"ESP32","parts":[{"path":"firmware.bin","offset":0}]}]}

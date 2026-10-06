@@ -28,16 +28,21 @@ class MultiNodeRepository(
 
     init { publish() }
 
+    private val hub = SocketHub(configs) { id, list -> scope.launch { refresh(id, list) } }
     private val jobs = configs.map { c ->
         scope.launch {
             while (true) {
+                hub.ensure(c.id)
                 refresh(c.id, clients.getValue(c.id).state())
-                delay(3000)
+                delay(if (hub.isOpen(c.id)) 8000 else 3000)
             }
         }
     }
 
-    fun close() = jobs.forEach { it.cancel() }
+    fun close() {
+        jobs.forEach { it.cancel() }
+        hub.closeAll()
+    }
 
     private fun refresh(id: String, list: List<Boolean>?) {
         val old = live[id] ?: Live()

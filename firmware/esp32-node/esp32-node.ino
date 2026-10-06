@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.3.0"
+#define FW_VERSION "0.4.0"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19};
@@ -80,6 +80,7 @@ void connectWifi() {
 }
 
 #include "schedules.h"
+#include "ws.h"
 
 void setup() {
   Serial.begin(115200);
@@ -104,6 +105,7 @@ void setup() {
   const char* keys[] = {"Authorization"};
   server.collectHeaders(keys, 1);
   schedSetup();
+  wsSetup();
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
       "\",\"firmware\":\"" FW_VERSION "\",\"channels\":" + String(N) + "}");
@@ -127,5 +129,6 @@ void setup() {
 void loop() {
   server.handleClient();
   schedTick();
+  wsLoop();
   if (WiFi.status() != WL_CONNECTED) { WiFi.reconnect(); delay(3000); }
 }
