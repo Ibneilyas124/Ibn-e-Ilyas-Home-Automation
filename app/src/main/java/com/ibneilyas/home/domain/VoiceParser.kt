@@ -178,4 +178,9 @@ object VoiceParser {
         }
         return first ?: Pair(VoiceResult.Message("I did not catch that"), list[0])
     }
+
+    /** True when nothing was understood, so the other language is worth a second try. */
+    fun needsRetry(r: VoiceResult): Boolean =
+        r is VoiceResult.Message &&
+            (r.text.startsWith("Say ") || r.text.startsWith("I could not") || r.text.startsWith("I did not"))
 }

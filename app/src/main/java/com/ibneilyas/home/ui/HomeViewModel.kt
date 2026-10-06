@@ -313,4 +313,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun voiceAlternatives(alts: List<String>) {
         viewModelScope.launch { say(runVoice(alts)) }
     }
+
+    /** Returns null when the caller should listen again in the other language. */
+    suspend fun voiceTry(alts: List<String>, lang: String, canRetry: Boolean): String? {
+        withTimeoutOrNull(4000) { data.first { it.appliances.isNotEmpty() } }
+        if (data.value.appliances.isEmpty()) {
+            return "No devices available. Check that your ESP32 controllers are online."
+        }
+        val (r, _) = VoiceParser.parseBest(alts, data.value, scenes.value, voiceRoom.value)
+        if (canRetry && VoiceParser.needsRetry(r)) return null
+        if (r !is VoiceResult.Message) setVoiceLang(lang)
+        return runVoice(alts)
+    }
 }
