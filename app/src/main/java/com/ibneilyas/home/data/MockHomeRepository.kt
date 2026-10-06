@@ -1,5 +1,7 @@
 package com.ibneilyas.home.data
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.ibneilyas.home.domain.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -7,11 +9,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** MOCK MODE: fake ESP32 nodes. No network, no hardware. */
-class MockHomeRepository : HomeRepository {
-
+/** MOCK MODE: fake ESP32 nodes. Light states are saved, so they survive restarts and are shared with the widget. */
+class MockHomeRepository(ctx: Context) : HomeRepository {
+    private val prefs = ctx.getSharedPreferences("mockstate", Context.MODE_PRIVATE)
     private val _data = MutableStateFlow(seed())
     override val data: StateFlow<HomeData> = _data.asStateFlow()
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "on") reload()
+    }
+
+    init {
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+    }
 
     override suspend fun toggle(applianceId: String) {
         val cur = _data.value
@@ -22,6 +31,7 @@ class MockHomeRepository : HomeRepository {
         delay(600)
         if (cur.isOnline(app)) {
             setState(applianceId, ApplianceState(isOn = !st.isOn, cmd = CmdState.IDLE))
+            save()
         } else {
             setState(applianceId, st.copy(cmd = CmdState.FAILED))
         }
@@ -29,6 +39,24 @@ class MockHomeRepository : HomeRepository {
 
     private fun setState(id: String, s: ApplianceState) {
         _data.update { it.copy(states = it.states + (id to s)) }
+    }
+
+    private fun onIds(): Set<String> =
+        prefs.getString("on", null)?.split(",")?.filter { it.isNotEmpty() }?.toSet()
+            ?: setOf("a1", "a3", "a8", "a10")
+
+    private fun save() {
+        val on = _data.value.states.filter { it.value.isOn }.keys.joinToString(",")
+        prefs.edit().putString("on", on).apply()
+    }
+
+    private fun reload() {
+        val ids = onIds()
+        _data.update { d ->
+            d.copy(states = d.appliances.associate { a ->
+                a.id to ApplianceState(a.id in ids, d.states[a.id]?.cmd ?: CmdState.IDLE)
+            })
+        }
     }
 
     private fun seed(): HomeData {
@@ -57,12 +85,8 @@ class MockHomeRepository : HomeRepository {
             Appliance("a10", "Kitchen Light", ApplianceType.LIGHT, "r4", "ESP32-KITCHEN", 1),
             Appliance("a11", "Exhaust Fan", ApplianceType.FAN, "r4", "ESP32-KITCHEN", 2)
         )
-        val states = mapOf(
-            "a1" to ApplianceState(true),
-            "a3" to ApplianceState(true),
-            "a8" to ApplianceState(true),
-            "a10" to ApplianceState(true)
-        )
+        val ids = onIds()
+        val states = apps.associate { it.id to ApplianceState(it.id in ids) }
         return HomeData(rooms, nodes, apps, states, mockMode = true)
     }
 }

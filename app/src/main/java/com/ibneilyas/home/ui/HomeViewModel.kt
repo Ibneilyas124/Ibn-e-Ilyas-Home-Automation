@@ -51,7 +51,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private fun build(): HomeRepository {
         val list = store.load()
         return if (store.real && list.isNotEmpty()) MultiNodeRepository(list, viewModelScope)
-        else MockHomeRepository()
+        else MockHomeRepository(getApplication<Application>())
     }
 
     private fun swap() {
@@ -324,5 +324,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         if (canRetry && VoiceParser.needsRetry(r)) return null
         if (r !is VoiceResult.Message) setVoiceLang(lang)
         return runVoice(alts)
+    }
+
+    fun storageSummary(): String {
+        val o = ostore.load()
+        return "Saved: ${o.names.size} renames, ${o.hidden.size} hidden, ${o.customRooms.size} extra rooms, " +
+            "${scenes.value.size} scenes, ${store.load().size} ESP32 nodes"
+    }
+
+    override fun onCleared() {
+        (repo.value as? MultiNodeRepository)?.close()
+        super.onCleared()
     }
 }

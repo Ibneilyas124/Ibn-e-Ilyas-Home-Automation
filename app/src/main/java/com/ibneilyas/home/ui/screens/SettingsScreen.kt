@@ -66,6 +66,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         AppearanceSection(vm)
         VoiceRoomSection(vm)
         WidgetSection()
+        Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("Backup", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(onClick = { exporter.launch("home_config.json") }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Export configuration") }
         OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Import configuration") }
