@@ -89,7 +89,7 @@ fun ApplianceEditDialog(
                         }
                     }
                 }
-                TextButton(onClick = onHide) { Text("Hide this device") }
+                TextButton(onClick = onHide) { Text("Delete this device") }
             }
         },
         confirmButton = { TextButton(onClick = { onSave(name.trim(), type, roomId) }, enabled = name.isNotBlank()) { Text("Save") } },

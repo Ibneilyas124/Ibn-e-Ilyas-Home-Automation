@@ -67,10 +67,10 @@ class MockHomeRepository(ctx: Context) : HomeRepository {
             Room("r4", "Kitchen", "kitchen")
         )
         val nodes = listOf(
-            Node("ESP32-SARFRAZ-ROOM", "Sarfraz Room Controller", "r1", true, 0, 4, "0.1.0"),
-            Node("ESP32-SHERAZ-ROOM", "Sheraz Room Controller", "r2", true, 0, 4, "0.1.0"),
-            Node("ESP32-DRAWING-ROOM", "Drawing Room Controller", "r3", true, 0, 8, "0.1.0"),
-            Node("ESP32-KITCHEN", "Kitchen Controller", "r4", false, 12, 4, "0.1.0")
+            Node("ESP32-SARFRAZ-ROOM", "Sarfraz Room Controller", "r1", true, 0, 8, "0.1.0"),
+            Node("ESP32-SHERAZ-ROOM", "Sheraz Room Controller", "r2", true, 0, 8, "0.1.0"),
+            Node("ESP32-DRAWING-ROOM", "Drawing Room Controller", "r3", true, 0, 16, "0.1.0"),
+            Node("ESP32-KITCHEN", "Kitchen Controller", "r4", false, 12, 8, "0.1.0")
         )
         val apps = listOf(
             Appliance("a1", "Living Light", ApplianceType.LIGHT, "r1", "ESP32-SARFRAZ-ROOM", 1),
@@ -85,8 +85,15 @@ class MockHomeRepository(ctx: Context) : HomeRepository {
             Appliance("a10", "Kitchen Light", ApplianceType.LIGHT, "r4", "ESP32-KITCHEN", 1),
             Appliance("a11", "Exhaust Fan", ApplianceType.FAN, "r4", "ESP32-KITCHEN", 2)
         )
+        val used = apps.map { it.nodeId to it.channel }.toSet()
+        val spares = nodes.flatMap { n ->
+            (1..n.channelCount).filter { (n.id to it) !in used }.map { ch ->
+                Appliance("sp-${n.id}-$ch", "Channel $ch", ApplianceType.OTHER, n.roomId, n.id, ch, true)
+            }
+        }
+        val all = apps + spares
         val ids = onIds()
-        val states = apps.associate { it.id to ApplianceState(it.id in ids) }
-        return HomeData(rooms, nodes, apps, states, mockMode = true)
+        val states = all.associate { it.id to ApplianceState(it.id in ids) }
+        return HomeData(rooms, nodes, all, states, mockMode = true)
     }
 }

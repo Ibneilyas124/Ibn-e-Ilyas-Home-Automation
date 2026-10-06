@@ -14,7 +14,8 @@ data class Overrides(
     val applianceRoom: Map<String, String> = emptyMap(),
     val customRooms: List<Room> = emptyList(),
     val hidden: Set<String> = emptySet(),
-    val hiddenRooms: Set<String> = emptySet()
+    val hiddenRooms: Set<String> = emptySet(),
+    val activated: Set<String> = emptySet()
 )
 
 class OverrideStore(ctx: Context) {
@@ -46,7 +47,8 @@ class OverrideStore(ctx: Context) {
                 Room(o.getString("id"), o.getString("name"), o.getString("icon"))
             },
             hidden = j.strSet("hidden"),
-            hiddenRooms = j.strSet("hiddenRooms")
+            hiddenRooms = j.strSet("hiddenRooms"),
+            activated = j.strSet("activated")
         )
     }
 
@@ -64,6 +66,7 @@ class OverrideStore(ctx: Context) {
         j.put("customRooms", cr)
         j.put("hidden", JSONArray(o.hidden.toList()))
         j.put("hiddenRooms", JSONArray(o.hiddenRooms.toList()))
+        j.put("activated", JSONArray(o.activated.toList()))
         p.edit().putString("json", j.toString()).apply()
     }
 }

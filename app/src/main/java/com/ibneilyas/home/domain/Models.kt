@@ -20,7 +20,8 @@ data class Appliance(
     val type: ApplianceType,
     val roomId: String,
     val nodeId: String,
-    val channel: Int
+    val channel: Int,
+    val spare: Boolean = false
 )
 
 enum class CmdState { IDLE, SENDING, FAILED }
@@ -48,3 +49,5 @@ data class HomeData(
 data class SceneAction(val applianceId: String, val on: Boolean)
 
 data class Scene(val id: String, val name: String, val actions: List<SceneAction>)
+
+data class FreeSlot(val id: String, val nodeId: String, val nodeName: String, val channel: Int, val online: Boolean)

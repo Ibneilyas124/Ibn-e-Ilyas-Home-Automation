@@ -38,7 +38,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val rooms = (d.rooms + o.customRooms).filter { it.id !in o.hiddenRooms }.map { r ->
             r.copy(name = o.rooms[r.id] ?: r.name, iconKey = o.roomIcons[r.id] ?: r.iconKey)
         }
-        val apps = d.appliances.filter { it.id !in o.hidden }.map { a ->
+        val apps = d.appliances.filter { it.id !in o.hidden && (!it.spare || it.id in o.activated) }.map { a ->
             a.copy(
                 name = o.names[a.id] ?: a.name,
                 type = o.types[a.id] ?: a.type,
@@ -335,5 +335,27 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         (repo.value as? MultiNodeRepository)?.close()
         super.onCleared()
+    }
+
+    fun freeSlots(): List<com.ibneilyas.home.domain.FreeSlot> {
+        val base = repo.value.data.value
+        val o = overrides.value
+        return base.appliances
+            .filter { it.id in o.hidden || (it.spare && it.id !in o.activated) }
+            .mapNotNull { a ->
+                val n = base.nodes.firstOrNull { it.id == a.nodeId } ?: return@mapNotNull null
+                com.ibneilyas.home.domain.FreeSlot(a.id, n.id, n.name, a.channel, n.online)
+            }
+            .sortedWith(compareBy({ it.nodeName }, { it.channel }))
+    }
+
+    fun addAppliance(slotId: String, name: String, type: ApplianceType, roomId: String) = change {
+        it.copy(
+            names = it.names + (slotId to name),
+            types = it.types + (slotId to type),
+            applianceRoom = it.applianceRoom + (slotId to roomId),
+            hidden = it.hidden - slotId,
+            activated = it.activated + slotId
+        )
     }
 }

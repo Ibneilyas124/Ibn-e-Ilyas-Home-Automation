@@ -22,6 +22,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
     val d by vm.data.collectAsState()
     var edit by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Appliance?>(null) }
     val room = d.rooms.firstOrNull { it.id == roomId }
     if (room == null) {
@@ -38,6 +39,14 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
             { n, t, r -> vm.editAppliance(a.id, n, t, r); editing = null },
             { vm.hideAppliance(a.id); editing = null },
             { editing = null }
+        )
+    }
+    if (adding) {
+        AddApplianceDialog(
+            roomName = room.name,
+            slots = vm.freeSlots(),
+            onSave = { s, n, t -> vm.addAppliance(s, n, t, roomId); adding = false },
+            onDismiss = { adding = false }
         )
     }
     LazyColumn(
@@ -72,6 +81,14 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
         if (edit) {
             item {
                 TextButton(onClick = { renaming = true }) { Text("Edit room") }
+            }
+        }
+        item {
+            Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (d.devicesIn(roomId).isEmpty()) {
+                    Text("No devices in this room yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("+ Add device") }
             }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->
