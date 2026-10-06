@@ -125,6 +125,11 @@ object Lexicon {
         add("socket", "sokat", "soket", "sacket", "sockit")
         add("zero", "ziro", "jiro", "jeero", "zeero", "zirow")
     }
+
+    // VOICE V4
+    private val canonSet: Set<String> by lazy { dict.values.toSet() }
+
+    fun isKnown(w: String): Boolean = w in canonSet || w in digitWords
     fun words(s: String): List<String> =
         norm(s).split(Regex("[^\\p{L}\\p{N}]+"))
             .filter { it.isNotEmpty() }

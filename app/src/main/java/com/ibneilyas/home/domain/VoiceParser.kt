@@ -111,6 +111,11 @@ object VoiceParser {
         else -> VoiceResult.Message("Say which room, for example: " + (d.rooms.firstOrNull()?.name ?: "Sarfraz's Room") + " select karo")
     }
 
+
+    /** A word the app can make sense of. Anything else is treated as chatter and ignored. */
+    private fun known(w: String, d: HomeData): Boolean =
+        w in generic || w in core || Lexicon.isKnown(w) ||
+            d.appliances.any { w in keys(it) } || d.rooms.any { w in words(it.name) }
     fun parse(text: String, d: HomeData, scenes: List<Scene>, activeRoomId: String? = null): VoiceResult {
         val set = fuzzy(words(text), d).toSet()
         val on = set.any { it in onWords }
@@ -141,8 +146,9 @@ object VoiceParser {
         }
         if (on && off) return VoiceResult.Message("Please say either ON or OFF, not both")
         val roomWords = found.flatMap { distinct(it) }.toSet()
-        val q = set - ignore - onWords - offWords - roomWords - setOf("all", "room", "select")
-        if (q.isEmpty()) return VoiceResult.Message("Say which device, for example: fan off karo")
+        val rest = set - ignore - onWords - offWords - roomWords - setOf("all", "room", "select")
+        val q = rest.filter { known(it, d) }.toSet()
+        if (q.isEmpty()) return VoiceResult.Message("I could not find a device in that. Say for example: fan off karo. Heard: $text")
         val scope = explicit ?: active
         val what = q.firstOrNull { it in generic } ?: "one"
         if (scope != null) {
