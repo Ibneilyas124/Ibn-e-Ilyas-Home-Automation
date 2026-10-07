@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.4.0"
+#define FW_VERSION "0.5.0"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19};
@@ -16,8 +16,13 @@ DNSServer dns;
 Preferences prefs;
 String token, deviceId;
 uint32_t restartAt = 0;
+uint8_t srcNow = 1;
+void logEv(int i, bool on);
+void featuresTick();
+void featuresEarly();
 
 void apply(int i, bool on) {
+  if (st[i] != on) logEv(i, on);
   st[i] = on;
   digitalWrite(PINS[i], (on != RELAY_ACTIVE_LOW) ? HIGH : LOW);
 }
@@ -63,6 +68,7 @@ void runPortal() {
   while (true) {
     dns.processNextRequest();
     server.handleClient();
+    featuresTick();
     if (restartAt && millis() > restartAt) ESP.restart();
     if (saved && millis() - t0 > 180000) ESP.restart();
   }
@@ -73,7 +79,9 @@ void connectWifi() {
   if (ssid.length() > 0) {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), prefs.getString("pass", "").c_str());
-    for (int i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++) delay(500);
+    for (int i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++) {
+      for (int k = 0; k < 10; k++) { featuresTick(); delay(50); }
+    }
     if (WiFi.status() == WL_CONNECTED) return;
   }
   runPortal();
@@ -81,6 +89,7 @@ void connectWifi() {
 
 #include "schedules.h"
 #include "ws.h"
+#include "features.h"
 
 void setup() {
   Serial.begin(115200);
@@ -89,6 +98,8 @@ void setup() {
     apply(i, false);
   }
   prefs.begin("ibn", false);
+  bootRestore();
+  featuresEarly();
   token = prefs.getString("token", "");
   if (token.length() == 0) {
     for (int i = 0; i < 4; i++) token += String(esp_random(), HEX);
@@ -105,6 +116,7 @@ void setup() {
   const char* keys[] = {"Authorization"};
   server.collectHeaders(keys, 1);
   schedSetup();
+  featuresSetup();
   wsSetup();
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
@@ -130,5 +142,9 @@ void loop() {
   server.handleClient();
   schedTick();
   wsLoop();
-  if (WiFi.status() != WL_CONNECTED) { WiFi.reconnect(); delay(3000); }
+  featuresTick();
+  static uint32_t lastTry = 0;
+  if (WiFi.status() != WL_CONNECTED) {
+    if (millis() - lastTry > 5000) { lastTry = millis(); WiFi.reconnect(); }
+  }
 }

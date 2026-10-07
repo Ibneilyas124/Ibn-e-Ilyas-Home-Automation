@@ -45,7 +45,7 @@ void schedTick() {
   lastKey = key;
   for (int i = 0; i < schedCount; i++) {
     Sched& s = scheds[i];
-    if (s.h == t.tm_hour && s.m == t.tm_min && (s.days & (1 << t.tm_wday))) apply(s.ch - 1, s.on);
+    if (s.h == t.tm_hour && s.m == t.tm_min && (s.days & (1 << t.tm_wday))) { srcNow = 2; apply(s.ch - 1, s.on); srcNow = 1; }
   }
 }
 
