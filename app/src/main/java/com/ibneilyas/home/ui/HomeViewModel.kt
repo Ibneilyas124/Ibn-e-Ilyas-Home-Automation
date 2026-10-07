@@ -307,6 +307,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
             is VoiceResult.Group -> applyVoice(r.list, r.on, r.label)
         }
+if (speakReplies.value) speaker().speak(spokenText(text))
         return if (text.contains("Heard:") || heard.isEmpty()) text else "$text  [heard: $heard]"
     }
 
@@ -334,6 +335,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         (repo.value as? MultiNodeRepository)?.close()
+        speakerOrNull?.shutdown()
         super.onCleared()
     }
 
@@ -386,4 +388,36 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun removeCorrection(heard: String) = saveCorrections(corrections.value - heard)
+
+    private var speakerOrNull: Speaker? = null
+    private fun speaker(): Speaker = speakerOrNull ?: Speaker(getApplication<Application>()).also { speakerOrNull = it }
+
+    val speakReplies = MutableStateFlow(look.getBoolean("speak", true))
+    val preferOffline = MutableStateFlow(look.getBoolean("voffline", false))
+
+    fun setSpeakReplies(v: Boolean) {
+        look.edit().putBoolean("speak", v).apply()
+        speakReplies.value = v
+        if (!v) speakerOrNull?.stop()
+    }
+
+    fun setPreferOffline(v: Boolean) {
+        look.edit().putBoolean("voffline", v).apply()
+        preferOffline.value = v
+    }
+
+    private fun spokenText(t: String): String = t
+        .replace(Regex("(?s)\\s*\\[heard:.*?\\]"), "")
+        .replace(Regex("(?s)\\s*Heard:.*$"), "")
+        .replace("(", ", ")
+        .replace(")", ",")
+        .replace(Regex("\\bON\\b"), "on")
+        .replace(Regex("\\bOFF\\b"), "off")
+        .trim()
+
+    suspend fun waitSpeech() {
+        withTimeoutOrNull(7000) {
+            while (speakerOrNull?.speaking == true) kotlinx.coroutines.delay(100)
+        }
+    }
 }

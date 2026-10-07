@@ -49,7 +49,7 @@ fun VoiceFab(vm: HomeViewModel) {
     }
     listenRef[0] = { l ->
         try {
-            launcher.launch(VoiceIntents.build(l))
+            launcher.launch(VoiceIntents.build(l, vm.preferOffline.value))
         } catch (e: ActivityNotFoundException) {
             vm.say("Voice input is not available on this phone")
         }

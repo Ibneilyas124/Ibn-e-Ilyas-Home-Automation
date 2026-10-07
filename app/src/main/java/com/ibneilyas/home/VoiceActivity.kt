@@ -34,6 +34,7 @@ class VoiceActivity : ComponentActivity() {
                     listen()
                 } else {
                     Toast.makeText(applicationContext, out, Toast.LENGTH_LONG).show()
+                    vm.waitSpeech()
                     finish()
                 }
             }
@@ -42,7 +43,7 @@ class VoiceActivity : ComponentActivity() {
 
     private fun listen() {
         try {
-            launcher.launch(VoiceIntents.build(lang))
+            launcher.launch(VoiceIntents.build(lang, vm.preferOffline.value))
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(this, "Voice input is not available on this phone", Toast.LENGTH_LONG).show()
             finish()
