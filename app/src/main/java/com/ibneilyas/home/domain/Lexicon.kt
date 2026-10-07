@@ -130,11 +130,28 @@ object Lexicon {
     private val canonSet: Set<String> by lazy { dict.values.toSet() }
 
     fun isKnown(w: String): Boolean = w in canonSet || w in digitWords
+
+    // VOICE V5
+    @Volatile
+    private var extra: Map<String, String> = emptyMap()
+
+    /** Corrections taught by the user in Settings: heard word -> word the app should use. */
+    fun setExtra(m: Map<String, String>) {
+        extra = m.entries.associate { norm(it.key.trim()) to norm(it.value.trim()) }
+    }
+
+    init {
+        add("kitchen", "kitchens", "kitchin", "kichen", "kichan", "kitchan", "kitten", "chicken", "itching", "listen", "kitching", "catching")
+        add("living", "leaving", "lining", "loving", "livin")
+        add("room", "rum")
+        add("sarfraz", "serfraz", "sarfras", "sarfaraj", "surfraz")
+        add("sheraz", "sheras", "sheriff", "sharaz", "shiraaz")
+    }
     fun words(s: String): List<String> =
         norm(s).split(Regex("[^\\p{L}\\p{N}]+"))
             .filter { it.isNotEmpty() }
             .map { w ->
-                val m = dict[w]
+                val m = extra[w] ?: dict[w]
                 when {
                     m != null -> m
                     w.length == 1 && w[0].digitToIntOrNull() != null -> digitWords[w[0].digitToInt()]

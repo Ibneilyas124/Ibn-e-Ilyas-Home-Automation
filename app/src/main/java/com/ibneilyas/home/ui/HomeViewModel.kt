@@ -358,4 +358,32 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             activated = it.activated + slotId
         )
     }
+
+    private val vprefs = app.getSharedPreferences("vcorr", 0)
+
+    private fun loadCorrections(): Map<String, String> {
+        val o = JSONObject(vprefs.getString("json", "{}") ?: "{}")
+        return o.keys().asSequence().associateWith { o.getString(it) }
+    }
+
+    val corrections = MutableStateFlow(loadCorrections())
+
+    init {
+        com.ibneilyas.home.domain.Lexicon.setExtra(corrections.value)
+    }
+
+    private fun saveCorrections(m: Map<String, String>) {
+        vprefs.edit().putString("json", JSONObject(m).toString()).apply()
+        corrections.value = m
+        com.ibneilyas.home.domain.Lexicon.setExtra(m)
+    }
+
+    fun addCorrection(heard: String, target: String) {
+        val h = heard.trim().lowercase().split(Regex("\\s+")).firstOrNull().orEmpty()
+        val t = target.trim().lowercase().split(Regex("\\s+")).firstOrNull().orEmpty()
+        if (h.isEmpty() || t.isEmpty() || h == t) return
+        saveCorrections(corrections.value + (h to t))
+    }
+
+    fun removeCorrection(heard: String) = saveCorrections(corrections.value - heard)
 }

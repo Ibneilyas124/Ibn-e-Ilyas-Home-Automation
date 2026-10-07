@@ -169,22 +169,37 @@ object VoiceParser {
         return ask(g, d, what, true)
     }
 
-    /** Tries recognizer alternatives. A clear question ("Which fan?") on the top guess always wins. */
+
+
+    private fun score(t: String, d: HomeData): Int {
+        val ws = fuzzy(words(t), d)
+        val room = roomsIn(ws.toSet(), d).isNotEmpty()
+        val unknown = ws.count { it !in ignore && !known(it, d) }
+        return 1 + (if (room) 3 else 0) + (if (unknown == 0) 2 else if (unknown == 1) 1 else 0)
+    }
+
+    /** Looks at every recognizer guess and keeps the one the app understands best. A named room counts most. */
     fun parseBest(alts: List<String>, d: HomeData, scenes: List<Scene>, activeRoomId: String?): Pair<VoiceResult, String> {
         val list = alts.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
         if (list.isEmpty()) return Pair(VoiceResult.Message("I did not catch that"), "")
         val topLen = list[0].split(" ").size
-        var first: Pair<VoiceResult, String>? = null
+        val top = parse(list[0], d, scenes, activeRoomId)
+        val topAsk = top is VoiceResult.Message && top.text.startsWith("Which ")
+        var best: Pair<VoiceResult, String>? = null
+        var bestScore = -1
         for ((i, t) in list.withIndex()) {
             if (i > 0 && t.split(" ").size != topLen) continue
-            val r = parse(t, d, scenes, activeRoomId)
-            if (r !is VoiceResult.Message) return Pair(r, t)
-            if (i == 0 && r.text.startsWith("Which ")) return Pair(r, t)
-            if (first == null) first = Pair(r, t)
+            val r = if (i == 0) top else parse(t, d, scenes, activeRoomId)
+            if (r is VoiceResult.Message) continue
+            val s = score(t, d)
+            if (topAsk && s < 4) continue
+            if (s > bestScore) {
+                best = Pair(r, t)
+                bestScore = s
+            }
         }
-        return first ?: Pair(VoiceResult.Message("I did not catch that"), list[0])
+        return best ?: Pair(top, list[0])
     }
-
     /** True when nothing was understood, so the other language is worth a second try. */
     fun needsRetry(r: VoiceResult): Boolean =
         r is VoiceResult.Message &&

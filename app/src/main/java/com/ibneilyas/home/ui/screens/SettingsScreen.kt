@@ -65,6 +65,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         Spacer(Modifier.height(8.dp))
         AppearanceSection(vm)
         VoiceRoomSection(vm)
+        VoiceCorrectionsSection(vm)
         WidgetSection()
         Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("Backup", style = MaterialTheme.typography.titleMedium)
