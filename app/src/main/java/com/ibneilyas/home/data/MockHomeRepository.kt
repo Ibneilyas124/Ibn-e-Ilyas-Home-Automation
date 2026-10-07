@@ -3,7 +3,12 @@ package com.ibneilyas.home.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.ibneilyas.home.domain.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -95,5 +100,19 @@ class MockHomeRepository(ctx: Context) : HomeRepository {
         val ids = onIds()
         val states = all.associate { it.id to ApplianceState(it.id in ids) }
         return HomeData(rooms, nodes, all, states, mockMode = true)
+    }
+
+    private val timerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val timerJobs = HashMap<String, Job>()
+
+    override suspend fun setTimer(applianceId: String, seconds: Int, on: Boolean): Boolean {
+        timerJobs.remove(applianceId)?.cancel()
+        if (seconds <= 0) return true
+        timerJobs[applianceId] = timerScope.launch {
+            delay(seconds * 1000L)
+            val st = _data.value.states[applianceId] ?: return@launch
+            if (st.isOn != on) toggle(applianceId)
+        }
+        return true
     }
 }

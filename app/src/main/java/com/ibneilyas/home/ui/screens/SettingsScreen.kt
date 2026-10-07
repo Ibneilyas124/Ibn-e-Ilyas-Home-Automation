@@ -15,7 +15,7 @@ import com.ibneilyas.home.core.BrandConfig
 import com.ibneilyas.home.ui.HomeViewModel
 
 @Composable
-fun SettingsScreen(vm: HomeViewModel) {
+fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
     val d by vm.data.collectAsState()
     val subtitle by vm.subtitle.collectAsState()
     var sub by remember(subtitle) { mutableStateOf(subtitle) }
@@ -70,6 +70,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         VoiceCorrectionsSection(vm)
         WidgetSection()
         Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        OutlinedButton(onClick = onActivity, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Activity history") }
         Text("Backup", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(onClick = { exporter.launch("home_config.json") }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Export configuration") }
         OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Import configuration") }

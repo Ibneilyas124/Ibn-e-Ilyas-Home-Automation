@@ -84,4 +84,11 @@ class MultiNodeRepository(
         cmd[applianceId] = if (res != null) CmdState.IDLE else CmdState.FAILED
         if (res != null) refresh(id, res) else publish()
     }
+
+    override suspend fun setTimer(applianceId: String, seconds: Int, on: Boolean): Boolean {
+        val id = applianceId.substringBefore(':')
+        val ch = applianceId.substringAfter(':').toIntOrNull() ?: return false
+        val client = clients[id] ?: return false
+        return client.setTimer(ch, seconds, on) != null
+    }
 }

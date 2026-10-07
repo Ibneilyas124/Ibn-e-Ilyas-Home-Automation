@@ -286,7 +286,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 is VoiceResult.RunScene -> { runScene(r.s); say("Running ${r.s.name}") }
                 is VoiceResult.Device -> {
                     val rn = d.rooms.firstOrNull { it.id == r.a.roomId }?.name
-                    say(applyVoice(listOf(r.a), r.on, if (rn != null) "${r.a.name} ($rn)" else r.a.name))
+                    say(voiceDevice(r, if (rn != null) "${r.a.name} ($rn)" else r.a.name))
                 }
                 is VoiceResult.Group -> say(applyVoice(r.list, r.on, r.label))
             }
@@ -303,7 +303,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             is VoiceResult.RunScene -> { runScene(r.s); "Running ${r.s.name}" }
             is VoiceResult.Device -> {
                 val rn = d.rooms.firstOrNull { it.id == r.a.roomId }?.name
-                applyVoice(listOf(r.a), r.on, if (rn != null) "${r.a.name} ($rn)" else r.a.name)
+                voiceDevice(r, if (rn != null) "${r.a.name} ($rn)" else r.a.name)
             }
             is VoiceResult.Group -> applyVoice(r.list, r.on, r.label)
         }
@@ -442,5 +442,35 @@ if (speakReplies.value) speaker().speak(spokenText(text))
         val acts = fresh(listOf("on", "off"))
         val types = fresh(listOf("light", "bulb", "fan", "socket", "all"))
         return listOf("Room" to rooms, "Device" to devs, "Action" to acts, "Type" to types).filter { it.second.isNotEmpty() }
+    }
+
+    private suspend fun voiceDevice(r: VoiceResult.Device, label: String): String {
+        if (r.delaySec <= 0) return applyVoice(listOf(r.a), r.on, label)
+        val mins = (r.delaySec + 59) / 60
+        if (r.forDuration) {
+            val first = applyVoice(listOf(r.a), r.on, label)
+            if (!first.contains("is now")) return first
+            val ok = repo.value.setTimer(r.a.id, r.delaySec, !r.on)
+            val then = if (r.on) "off" else "on"
+            return if (ok) "$first, then $then in $mins min" else "$first. Timer failed"
+        }
+        val ok = repo.value.setTimer(r.a.id, r.delaySec, r.on)
+        val v = if (r.on) "on" else "off"
+        return if (ok) "$label will turn $v in $mins min" else "Could not set the timer. Is the ESP32 online?"
+    }
+
+    fun setTimer(applianceId: String, minutes: Int, on: Boolean) {
+        viewModelScope.launch {
+            val name = data.value.appliances.firstOrNull { it.id == applianceId }?.name ?: "Device"
+            val ok = repo.value.setTimer(applianceId, minutes * 60, on)
+            val word = if (on) "ON" else "OFF"
+            say(
+                when {
+                    !ok -> "Could not set the timer. Is the ESP32 online?"
+                    minutes <= 0 -> "Timer cancelled for $name"
+                    else -> "$name will turn $word in $minutes min"
+                }
+            )
+        }
     }
 }

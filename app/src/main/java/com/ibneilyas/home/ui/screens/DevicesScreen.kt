@@ -53,6 +53,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                         Text(n.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!d.mockMode) NodeStatus(online)
                         if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
+                        if (!d.mockMode) TextButton(onClick = { onSchedules("opt:" + n.id) }) { Text("Options") }
                         TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }
                     }
                     IconButton(onClick = { vm.removeNode(n.id) }) {

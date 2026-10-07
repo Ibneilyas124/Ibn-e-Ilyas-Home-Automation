@@ -1,7 +1,7 @@
 package com.ibneilyas.home.domain
 
 sealed class VoiceResult {
-    data class Device(val a: Appliance, val on: Boolean) : VoiceResult()
+    data class Device(val a: Appliance, val on: Boolean, val delaySec: Int = 0, val forDuration: Boolean = false) : VoiceResult()
     data class Group(val list: List<Appliance>, val on: Boolean, val label: String) : VoiceResult()
     data class RunScene(val s: Scene) : VoiceResult()
     data class SelectRoom(val room: Room) : VoiceResult()
@@ -117,7 +117,8 @@ object VoiceParser {
         w in generic || w in core || Lexicon.isKnown(w) ||
             d.appliances.any { w in keys(it) } || d.rooms.any { w in words(it.name) }
     fun parse(text: String, d: HomeData, scenes: List<Scene>, activeRoomId: String? = null): VoiceResult {
-        val set = fuzzy(words(text), d).toSet()
+        val dur = VoiceTime.extract(text)
+        val set = fuzzy(words(dur?.rest ?: text), d).toSet()
         val on = set.any { it in onWords }
         val off = set.any { it in offWords } || (!on && "of" in set && "please" in set)
         val found = roomsIn(set, d)
@@ -136,6 +137,7 @@ object VoiceParser {
         if ("all" in set && type != null && on != off) {
             val list = d.appliances.filter { it.type == type && (explicit == null || it.roomId == explicit.id) }
             val name = type.name.lowercase()
+            if (dur != null) return VoiceResult.Message("Timers work for one device at a time. Name the device.")
             val where = if (explicit != null) " in ${explicit.name}" else ""
             if (list.isEmpty()) return VoiceResult.Message("No $name devices$where. Set device types in edit mode.")
             return VoiceResult.Group(list, on, "all ${name}s$where")
@@ -153,7 +155,7 @@ object VoiceParser {
         val what = q.firstOrNull { it in generic } ?: "one"
         if (scope != null) {
             val m = pick(matches(d.appliances.filter { it.roomId == scope.id }, q), q)
-            if (m.size == 1) return VoiceResult.Device(m[0], on)
+            if (m.size == 1) return VoiceResult.Device(m[0], on, dur?.seconds ?: 0, dur?.forDuration ?: false)
             if (m.size > 1) return ask(m, d, what, false)
             if (explicit != null) return notFound(q, d, text, " in ${explicit.name}")
         }
@@ -165,7 +167,7 @@ object VoiceParser {
             val v = if (on) "on" else "off"
             return VoiceResult.Message("No $what in ${scope.name}. Say the room name, for example: Drawing Room $what $v karo")
         }
-        if (g.size == 1) return VoiceResult.Device(g[0], on)
+        if (g.size == 1) return VoiceResult.Device(g[0], on, dur?.seconds ?: 0, dur?.forDuration ?: false)
         return ask(g, d, what, true)
     }
 

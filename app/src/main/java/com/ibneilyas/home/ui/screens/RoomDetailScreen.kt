@@ -23,6 +23,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var edit by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
+    var timing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Appliance?>(null) }
     val room = d.rooms.firstOrNull { it.id == roomId }
     if (room == null) {
@@ -47,6 +48,13 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
             slots = vm.freeSlots(),
             onSave = { s, n, t -> vm.addAppliance(s, n, t, roomId); adding = false },
             onDismiss = { adding = false }
+        )
+    }
+    if (timing) {
+        TimerDialog(
+            devices = d.devicesIn(roomId),
+            onStart = { id, m, o -> vm.setTimer(id, m, o); timing = false },
+            onDismiss = { timing = false }
         )
     }
     LazyColumn(
@@ -90,6 +98,13 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 }
                 Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("+ Add device") }
             }
+        }
+        item {
+            OutlinedButton(
+                onClick = { timing = true },
+                enabled = d.devicesIn(roomId).isNotEmpty(),
+                modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(48.dp)
+            ) { Text("Set timer") }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->
             Box(Modifier.padding(start = 12.dp)) {

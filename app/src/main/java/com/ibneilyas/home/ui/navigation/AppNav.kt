@@ -27,6 +27,8 @@ import androidx.navigation.navArgument
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.VoiceFab
 import com.ibneilyas.home.ui.screens.HomeScreen
+import com.ibneilyas.home.ui.screens.ActivityScreen
+import com.ibneilyas.home.ui.screens.NodeOptionsScreen
 import com.ibneilyas.home.ui.screens.SchedulesScreen
 import com.ibneilyas.home.ui.screens.ScenesScreen
 import com.ibneilyas.home.ui.screens.DevicesScreen
@@ -87,9 +89,13 @@ fun AppNav() {
             composable("schedules/{nodeId}", arguments = listOf(navArgument("nodeId") { type = NavType.StringType })) { e ->
                 SchedulesScreen(e.arguments?.getString("nodeId").orEmpty(), vm) { nav.popBackStack() }
             }
+            composable("node/{nodeId}", arguments = listOf(navArgument("nodeId") { type = NavType.StringType })) { e ->
+                NodeOptionsScreen(e.arguments?.getString("nodeId").orEmpty(), vm) { nav.popBackStack() }
+            }
+            composable("activity") { ActivityScreen(vm) { nav.popBackStack() } }
             composable(Tab.Scenes.route) { ScenesScreen(vm) }
-            composable(Tab.Devices.route) { DevicesScreen(vm) { id -> nav.navigate("schedules/$id") } }
-            composable(Tab.Settings.route) { SettingsScreen(vm) }
+            composable(Tab.Devices.route) { DevicesScreen(vm) { id -> if (id.startsWith("opt:")) nav.navigate("node/" + id.removePrefix("opt:")) else nav.navigate("schedules/$id") } }
+            composable(Tab.Settings.route) { SettingsScreen(vm) { nav.navigate("activity") } }
         }
     }
 }
