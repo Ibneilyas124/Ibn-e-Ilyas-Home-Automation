@@ -66,6 +66,7 @@ fun SettingsScreen(vm: HomeViewModel) {
         AppearanceSection(vm)
         VoiceOptionsSection(vm)
         VoiceRoomSection(vm)
+        RecentVoiceSection(vm)
         VoiceCorrectionsSection(vm)
         WidgetSection()
         Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

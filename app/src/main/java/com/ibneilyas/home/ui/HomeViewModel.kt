@@ -308,6 +308,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             is VoiceResult.Group -> applyVoice(r.list, r.on, r.label)
         }
 if (speakReplies.value) speaker().speak(spokenText(text))
+        logVoice(heard, text)
         return if (text.contains("Heard:") || heard.isEmpty()) text else "$text  [heard: $heard]"
     }
 
@@ -322,7 +323,7 @@ if (speakReplies.value) speaker().speak(spokenText(text))
             return "No devices available. Check that your ESP32 controllers are online."
         }
         val (r, _) = VoiceParser.parseBest(alts, data.value, scenes.value, voiceRoom.value)
-        if (canRetry && VoiceParser.needsRetry(r)) return null
+        if (canRetry && VoiceParser.needsRetry(r)) { logVoice(alts.firstOrNull().orEmpty(), "Not understood, trying again"); return null }
         if (r !is VoiceResult.Message) setVoiceLang(lang)
         return runVoice(alts)
     }
@@ -419,5 +420,27 @@ if (speakReplies.value) speaker().speak(spokenText(text))
         withTimeoutOrNull(7000) {
             while (speakerOrNull?.speaking == true) kotlinx.coroutines.delay(100)
         }
+    }
+
+    private val vlog = VoiceLogStore(app)
+
+    fun recentVoice(): List<VoiceLog> = vlog.load()
+
+    fun clearVoiceLog() = vlog.clear()
+
+    private fun logVoice(heard: String, result: String) {
+        if (heard.isNotBlank()) vlog.add(VoiceLog(System.currentTimeMillis(), heard, result))
+    }
+
+    /** What a mis-heard word can really mean: words from the user's own rooms and devices. */
+    fun teachChoices(): List<Pair<String, List<String>>> {
+        val d = data.value
+        val seen = HashSet<String>()
+        fun fresh(l: List<String>) = l.filter { it.length >= 2 && seen.add(it) }
+        val rooms = fresh(d.rooms.flatMap { com.ibneilyas.home.domain.Lexicon.words(it.name) }.filter { it != "room" })
+        val devs = fresh(d.appliances.flatMap { com.ibneilyas.home.domain.Lexicon.words(it.name) })
+        val acts = fresh(listOf("on", "off"))
+        val types = fresh(listOf("light", "bulb", "fan", "socket", "all"))
+        return listOf("Room" to rooms, "Device" to devs, "Action" to acts, "Type" to types).filter { it.second.isNotEmpty() }
     }
 }

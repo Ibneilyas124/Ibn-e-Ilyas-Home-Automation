@@ -49,7 +49,7 @@ object VoiceParser {
                 else -> {
                     val best = known.minOfOrNull { lev(w, it) } ?: 99
                     val near = known.filter { lev(w, it) == best }
-                    if (best <= 2 && best < w.length / 2 && near.size == 1) near[0] else w
+                    if (best <= 2 && best < w.length / 2 && near.size == 1) near[0] else (Sound.match(w, known) ?: w)
                 }
             }
         }
