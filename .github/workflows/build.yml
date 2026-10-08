@@ -15,7 +15,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "FAILED: signing key secret missing"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ibn.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/ibn.jks" >> "$GITHUB_ENV"
       - name: Build
+        env:
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
         run: gradle assembleDebug --console=plain > build.log 2>&1
       - name: Show errors
         if: failure()
@@ -27,6 +36,8 @@ jobs:
           name: IbnEIlyasHome-debug
           path: app/build/outputs/apk/debug/*.apk
       - name: Voice tests
+        env:
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
         run: gradle testDebugUnitTest --console=plain > test.log 2>&1
       - name: Show test failures
         if: failure() && hashFiles('test.log') != ''
