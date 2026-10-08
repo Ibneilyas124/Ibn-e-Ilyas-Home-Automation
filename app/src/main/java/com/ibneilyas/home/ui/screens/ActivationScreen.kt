@@ -22,6 +22,8 @@ fun ActivationScreen(onActivated: () -> Unit) {
     val id = remember { License.deviceId(ctx) }
     var code by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
+    var dev by remember { mutableStateOf(false) }
+    if (dev) DeveloperInfoDialog { dev = false }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -52,5 +54,11 @@ fun ActivationScreen(onActivated: () -> Unit) {
             ) { Text("Activate") }
         }
         if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "If you do not have an activation code, please contact the developer.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedButton(onClick = { dev = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Contact developer") }
     }
 }
