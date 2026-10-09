@@ -52,6 +52,11 @@ class VoiceActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!com.ibneilyas.home.core.License.isActive(applicationContext)) {
+            Toast.makeText(this, "Please open the app and activate it first", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         lang = vm.voiceLang.value
         listen()
     }

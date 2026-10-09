@@ -6,6 +6,17 @@ plugins {
 android {
     namespace = "com.ibneilyas.home"
     compileSdk = 34
+    signingConfigs {
+        val ksPath = System.getenv("KEYSTORE_PATH")
+        if (ksPath != null && file(ksPath).exists()) {
+            create("ibn") {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("KEYSTORE_PASS")
+                keyAlias = "ibn"
+                keyPassword = System.getenv("KEYSTORE_PASS")
+            }
+        }
+    }
     defaultConfig {
         applicationId = "com.ibneilyas.home"
         minSdk = 26
@@ -20,6 +31,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    buildTypes {
+        getByName("debug") {
+            signingConfigs.findByName("ibn")?.let { signingConfig = it }
+        }
+    }
 }
 
 dependencies {
