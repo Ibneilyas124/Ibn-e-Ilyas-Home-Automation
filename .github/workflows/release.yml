@@ -1,0 +1,52 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install platformio esptool==4.7.0
+      - name: Build firmware
+        run: |
+          pio run
+          mkdir -p dist
+          B=.pio/build/esp32dev
+          A=$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
+          V=$(grep -o '#define FW_VERSION "[^"]*"' firmware/esp32-node/esp32-node.ino | cut -d'"' -f2)
+          esptool.py --chip esp32 merge_bin -o "dist/ibn-firmware-$V-full.bin" --flash_mode dio --flash_freq 40m --flash_size 4MB 0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 $A 0x10000 $B/firmware.bin
+          cp $B/firmware.bin "dist/ibn-firmware-$V-ota.bin"
+      - name: Java for APK
+        if: github.event.repository.private == true || vars.INCLUDE_APK == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Gradle for APK
+        if: github.event.repository.private == true || vars.INCLUDE_APK == 'true'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - name: Build APK
+        if: github.event.repository.private == true || vars.INCLUDE_APK == 'true'
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "FAILED: signing key secret missing"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ibn.jks"
+          export KEYSTORE_PATH="$RUNNER_TEMP/ibn.jks"
+          gradle assembleDebug --console=plain
+          cp app/build/outputs/apk/debug/*.apk "dist/IbnEIlyasHome-$GITHUB_REF_NAME.apk"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Ibn e Ilyas Home $GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
