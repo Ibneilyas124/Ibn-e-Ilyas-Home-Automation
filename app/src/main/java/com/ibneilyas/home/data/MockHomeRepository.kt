@@ -115,4 +115,12 @@ class MockHomeRepository(ctx: Context) : HomeRepository {
         }
         return true
     }
+
+    override suspend fun schedules(nodeId: String): List<SchedEntry>? =
+        SchedCodec.parse(nodeId, prefs.getString("sched:" + nodeId, "") ?: "")
+
+    override suspend fun saveSchedules(nodeId: String, list: List<SchedEntry>): List<SchedEntry>? {
+        prefs.edit().putString("sched:" + nodeId, SchedCodec.encode(list)).apply()
+        return list
+    }
 }

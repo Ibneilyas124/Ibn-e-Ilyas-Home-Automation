@@ -91,4 +91,14 @@ class MultiNodeRepository(
         val client = clients[id] ?: return false
         return client.setTimer(ch, seconds, on) != null
     }
+
+    override suspend fun schedules(nodeId: String): List<SchedEntry>? {
+        val txt = clients[nodeId]?.schedules() ?: return null
+        return SchedCodec.parse(nodeId, txt)
+    }
+
+    override suspend fun saveSchedules(nodeId: String, list: List<SchedEntry>): List<SchedEntry>? {
+        val txt = clients[nodeId]?.setSchedules(SchedCodec.encode(list)) ?: return null
+        return SchedCodec.parse(nodeId, txt)
+    }
 }
