@@ -18,7 +18,7 @@ import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.*
 
 @Composable
-fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
+fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit = {}, onBack: () -> Unit) {
     val d by vm.data.collectAsState()
     var edit by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -105,6 +105,13 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 enabled = d.devicesIn(roomId).isNotEmpty(),
                 modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(48.dp)
             ) { Text("Set timer") }
+        }
+        item {
+            OutlinedButton(
+                onClick = onSchedules,
+                enabled = d.devicesIn(roomId).isNotEmpty(),
+                modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(48.dp)
+            ) { Text("Schedules") }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->
             Box(Modifier.padding(start = 12.dp)) {

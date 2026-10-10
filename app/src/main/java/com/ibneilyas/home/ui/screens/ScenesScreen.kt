@@ -20,7 +20,7 @@ import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.SceneEditDialog
 
 @Composable
-fun ScenesScreen(vm: HomeViewModel) {
+fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
     val d by vm.data.collectAsState()
     val scenes by vm.scenes.collectAsState()
     val running by vm.runningScene.collectAsState()
@@ -37,6 +37,9 @@ fun ScenesScreen(vm: HomeViewModel) {
         item {
             Text("Scenes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             msg?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        }
+        item {
+            OutlinedButton(onClick = onSchedules, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Schedules (automatic ON/OFF by time)") }
         }
         if (scenes.isEmpty()) {
             item { Text("No scenes yet. Tap Add scene below.", color = MaterialTheme.colorScheme.onSurfaceVariant) }

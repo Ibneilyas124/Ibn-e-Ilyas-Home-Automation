@@ -51,3 +51,5 @@ data class SceneAction(val applianceId: String, val on: Boolean)
 data class Scene(val id: String, val name: String, val actions: List<SceneAction>)
 
 data class FreeSlot(val id: String, val nodeId: String, val nodeName: String, val channel: Int, val online: Boolean)
+
+data class SchedEntry(val nodeId: String, val h: Int, val m: Int, val days: Int, val ch: Int, val on: Boolean)

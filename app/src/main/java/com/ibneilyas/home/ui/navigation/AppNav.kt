@@ -27,6 +27,7 @@ import androidx.navigation.navArgument
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.VoiceFab
 import com.ibneilyas.home.ui.screens.HomeScreen
+import com.ibneilyas.home.ui.screens.SchedulesHubScreen
 import com.ibneilyas.home.ui.screens.ActivityScreen
 import com.ibneilyas.home.ui.screens.NodeOptionsScreen
 import com.ibneilyas.home.ui.screens.SchedulesScreen
@@ -82,7 +83,7 @@ fun AppNav() {
                 "room/{roomId}",
                 arguments = listOf(navArgument("roomId") { type = NavType.StringType })
             ) { entry ->
-                RoomDetailScreen(entry.arguments?.getString("roomId").orEmpty(), vm) {
+                RoomDetailScreen(entry.arguments?.getString("roomId").orEmpty(), vm, onSchedules = { nav.navigate("sched/" + entry.arguments?.getString("roomId").orEmpty()) }) {
                     nav.popBackStack()
                 }
             }
@@ -93,8 +94,12 @@ fun AppNav() {
                 NodeOptionsScreen(e.arguments?.getString("nodeId").orEmpty(), vm) { nav.popBackStack() }
             }
             composable("activity") { ActivityScreen(vm) { nav.popBackStack() } }
-            composable(Tab.Scenes.route) { ScenesScreen(vm) }
-            composable(Tab.Devices.route) { DevicesScreen(vm) { id -> if (id.startsWith("opt:")) nav.navigate("node/" + id.removePrefix("opt:")) else nav.navigate("schedules/$id") } }
+            composable("sched") { SchedulesHubScreen(null, vm) { nav.popBackStack() } }
+            composable("sched/{roomId}", arguments = listOf(navArgument("roomId") { type = NavType.StringType })) { e ->
+                SchedulesHubScreen(e.arguments?.getString("roomId"), vm) { nav.popBackStack() }
+            }
+            composable(Tab.Scenes.route) { ScenesScreen(vm) { nav.navigate("sched") } }
+            composable(Tab.Devices.route) { DevicesScreen(vm) { id -> if (id.startsWith("opt:")) nav.navigate("node/" + id.removePrefix("opt:")) else nav.navigate("sched") } }
             composable(Tab.Settings.route) { SettingsScreen(vm) { nav.navigate("activity") } }
         }
     }

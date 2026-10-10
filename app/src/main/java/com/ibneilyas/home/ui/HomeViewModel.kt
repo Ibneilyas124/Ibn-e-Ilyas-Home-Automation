@@ -473,4 +473,10 @@ if (speakReplies.value) speaker().speak(spokenText(text))
             )
         }
     }
+
+    suspend fun schedulesOf(nodeId: String): List<com.ibneilyas.home.domain.SchedEntry>? =
+        repo.value.schedules(nodeId)
+
+    suspend fun saveSchedulesOf(nodeId: String, list: List<com.ibneilyas.home.domain.SchedEntry>): List<com.ibneilyas.home.domain.SchedEntry>? =
+        repo.value.saveSchedules(nodeId, list)
 }
