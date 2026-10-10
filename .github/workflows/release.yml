@@ -2,13 +2,22 @@ name: Release
 on:
   push:
     tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Release name
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then T="$GITHUB_REF_NAME"; else T="latest"; fi
+          echo "TAG=$T" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -43,10 +52,17 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ibn.jks"
           export KEYSTORE_PATH="$RUNNER_TEMP/ibn.jks"
           gradle assembleDebug --console=plain
-          cp app/build/outputs/apk/debug/*.apk "dist/IbnEIlyasHome-$GITHUB_REF_NAME.apk"
+          cp app/build/outputs/apk/debug/*.apk "dist/IbnEIlyasHome-$TAG.apk"
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           (cd dist && sha256sum * > SHA256SUMS.txt)
-          gh release create "$GITHUB_REF_NAME" dist/* --title "Ibn e Ilyas Home $GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
+          { echo "Built from commit $(echo "$GITHUB_SHA" | cut -c1-7) on $(date -u '+%Y-%m-%d %H:%M') UTC"; echo; cat RELEASE_NOTES.md; } > notes.md
+          if [ "$TAG" = "latest" ]; then
+            gh release delete latest --cleanup-tag --yes || true
+            TITLE="Latest build (main)"
+          else
+            TITLE="Ibn e Ilyas Home $TAG"
+          fi
+          gh release create "$TAG" dist/* --title "$TITLE" --notes-file notes.md --target "$GITHUB_SHA"
