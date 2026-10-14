@@ -33,7 +33,7 @@ object License {
 
     fun isActive(ctx: Context): Boolean {
         val code = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("code", "") ?: ""
-        return code.isNotEmpty() && verify(LicenseKey.PUBLIC_B64, deviceId(ctx), code)
+        return (code.isNotEmpty() && verify(LicenseKey.PUBLIC_B64, deviceId(ctx), code)) || houseOf(ctx) != null
     }
 
     fun activate(ctx: Context, code: String): Boolean {
@@ -42,4 +42,42 @@ object License {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("code", c).apply()
         return true
     }
+
+    fun parseHousehold(pubB64: String, code: String): Household? {
+        try {
+            val parts = code.filter { !it.isWhitespace() }.split(".")
+            if (parts.size != 3 || parts[0] != "K2") return null
+            val dec = Base64.getDecoder()
+            val payload = dec.decode(parts[1])
+            val key = KeyFactory.getInstance("EC")
+                .generatePublic(X509EncodedKeySpec(dec.decode(pubB64.filter { !it.isWhitespace() })))
+            val sig = Signature.getInstance("SHA256withECDSA")
+            sig.initVerify(key)
+            sig.update(payload)
+            if (!sig.verify(dec.decode(parts[2]))) return null
+            val f = String(payload, Charsets.UTF_8).split("|")
+            if (f.size < 4 || f[0] != "IBN2") return null
+            val max = f[2].toIntOrNull() ?: return null
+            if (max < 1 || max > 50) return null
+            return Household(f[1], max, f.drop(3).joinToString("|"))
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
+    fun houseOf(ctx: Context): Household? {
+        val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val k = p.getString("house", "") ?: ""
+        if (k.isEmpty() || p.getString("seat", "") != deviceId(ctx)) return null
+        return parseHousehold(LicenseKey.PUBLIC_B64, k)
+    }
+
+    fun saveHousehold(ctx: Context, key: String) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString("house", key.filter { !it.isWhitespace() })
+            .putString("seat", deviceId(ctx))
+            .apply()
+    }
 }
+
+data class Household(val espId: String, val max: Int, val name: String)

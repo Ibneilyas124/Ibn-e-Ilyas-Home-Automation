@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
             val accent by vm.accent.collectAsState()
             var active by remember { mutableStateOf(License.isActive(applicationContext)) }
             HomeTheme(dark, accent) {
-                if (active) AppNav() else ActivationScreen { active = true }
+                if (active) AppNav() else ActivationScreen(onActivated = { active = true }, onHouseholdNode = { ip, tk -> vm.addNode("Main Controller", ip, tk) })
             }
         }
     }

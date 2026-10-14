@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.5.0"
+#define FW_VERSION "0.6.0"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19};
@@ -90,6 +90,7 @@ void connectWifi() {
 #include "schedules.h"
 #include "ws.h"
 #include "features.h"
+#include "seats.h"
 
 void setup() {
   Serial.begin(115200);
@@ -117,6 +118,7 @@ void setup() {
   server.collectHeaders(keys, 1);
   schedSetup();
   featuresSetup();
+  seatSetup();
   wsSetup();
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
