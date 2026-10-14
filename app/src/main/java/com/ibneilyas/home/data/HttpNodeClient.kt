@@ -98,4 +98,14 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
             false
         }
     }
+
+    /** Asks the ESP32 for a phone seat. Returns (http status, body), or null when it cannot be reached. */
+    suspend fun seat(phone: String, max: Int): Pair<Int, String>? = withContext(Dispatchers.IO) {
+        try {
+            val r = req("/api/seat").post(form("phone" to phone, "max" to "$max")).build()
+            http.newCall(r).execute().use { resp -> Pair(resp.code, resp.body?.string().orEmpty()) }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
