@@ -5,12 +5,13 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.6.0"
+#define FW_VERSION "0.8.0"
 #define RELAY_ACTIVE_LOW true
 
-const uint8_t PINS[] = {16, 17, 18, 19};
-const int N = sizeof(PINS);
-bool st[N];
+const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
+const int NMAX = sizeof(PINS);
+int N = 4;
+bool st[NMAX];
 WebServer server(80);
 DNSServer dns;
 Preferences prefs;
@@ -90,15 +91,17 @@ void connectWifi() {
 #include "schedules.h"
 #include "ws.h"
 #include "features.h"
+#include "lock.h"
 #include "seats.h"
 
 void setup() {
   Serial.begin(115200);
+  prefs.begin("ibn", false);
+  N = constrain((int)prefs.getUChar("nch", 4), 1, NMAX);
   for (int i = 0; i < N; i++) {
     pinMode(PINS[i], OUTPUT);
     apply(i, false);
   }
-  prefs.begin("ibn", false);
   bootRestore();
   featuresEarly();
   token = prefs.getString("token", "");
@@ -118,8 +121,21 @@ void setup() {
   server.collectHeaders(keys, 1);
   schedSetup();
   featuresSetup();
+  lockSetup();
   seatSetup();
   wsSetup();
+  server.on("/api/channels", HTTP_POST, []() {
+    if (!authed()) return;
+    int n = server.arg("n").toInt();
+    if (n < 1 || n > NMAX) {
+      server.send(400, "application/json", "{\"error\":\"n 1 se 8\"}");
+      return;
+    }
+    prefs.putUChar("nch", n);
+    server.send(200, "application/json", "{\"channels\":" + String(n) + ",\"restart\":true}");
+    delay(500);
+    ESP.restart();
+  });
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
       "\",\"firmware\":\"" FW_VERSION "\",\"channels\":" + String(N) + "}");

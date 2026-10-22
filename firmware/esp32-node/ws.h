@@ -4,7 +4,7 @@
 
 WebSocketsServer wss(81);
 bool wsAuth[WEBSOCKETS_SERVER_CLIENT_MAX];
-bool lastSt[N];
+bool lastSt[NMAX];
 
 void wsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   if (type == WStype_DISCONNECTED) {

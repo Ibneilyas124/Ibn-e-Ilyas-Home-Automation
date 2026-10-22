@@ -52,6 +52,18 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                         Text(n.room, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(n.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!d.mockMode) NodeStatus(online)
+                        if (!d.mockMode) {
+                            var gs by remember(n.id, n.ip, online) { mutableStateOf("") }
+                            LaunchedEffect(n.id, n.ip, n.token, online) {
+                                gs = com.ibneilyas.home.data.HttpNodeClient("http://" + n.ip, n.token).genuineStatus()
+                            }
+                            when (gs) {
+                                "genuine" -> Text("Genuine controller", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                "unprovisioned" -> Text("Not provisioned (no certificate yet)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                "oldfw" -> Text("Firmware too old for the certificate check (needs 0.7.0)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                else -> {}
+                            }
+                        }
                         if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
                         if (!d.mockMode) TextButton(onClick = { onSchedules("opt:" + n.id) }) { Text("Options") }
                         TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }

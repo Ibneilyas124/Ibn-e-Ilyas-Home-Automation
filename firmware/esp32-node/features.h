@@ -5,7 +5,7 @@
 #define MAX_TMR 8
 #define MAX_EV 20
 
-const uint8_t SW_PINS[] = {32, 33, 25, 26};
+const uint8_t SW_PINS[] = {32, 33, 25, 26, 4, 5, 13, 14};
 const int SWN = sizeof(SW_PINS);
 
 struct Tmr { bool active; uint8_t ch; bool on; uint32_t endMs; };
@@ -14,11 +14,14 @@ struct Ev { uint32_t t; uint8_t ch; bool on; uint8_t src; };
 Tmr tmrs[MAX_TMR];
 Ev evs[MAX_EV];
 int evCount = 0;
+bool evDirty = false;
+uint32_t evDirtyAt = 0;
+int unsyncedNew = 0;
 String bootMode = "last";
 uint8_t swMode = 0;
 uint32_t savedMask = 0, lastMask = 0, maskSince = 0;
-bool swLast[N], swStable[N];
-uint32_t swChange[N];
+bool swLast[NMAX], swStable[NMAX];
+uint32_t swChange[NMAX];
 uint8_t otaState = 0;
 uint32_t otaRebootAt = 0;
 
@@ -27,6 +30,53 @@ void logEv(int i, bool on) {
   if (evCount < MAX_EV) evCount++;
   for (int k = evCount - 1; k > 0; k--) evs[k] = evs[k - 1];
   evs[0] = {(uint32_t)(now > 1700000000 ? now : 0), (uint8_t)(i + 1), on, srcNow};
+  evDirty = true;
+  evDirtyAt = millis();
+  if (now <= 1700000000 && unsyncedNew < MAX_EV) unsyncedNew++;
+}
+
+void evSave() {
+  String s;
+  for (int i = 0; i < evCount; i++) {
+    s += String(evs[i].t) + "," + String(evs[i].ch) + "," + String(evs[i].on ? 1 : 0) + "," + String(evs[i].src) + ";";
+  }
+  prefs.putString("evlog", s);
+}
+
+void evLoad() {
+  String s = prefs.getString("evlog", "");
+  evCount = 0;
+  int pos = 0;
+  while (pos < (int)s.length() && evCount < MAX_EV) {
+    int end = s.indexOf(';', pos);
+    if (end < 0) end = s.length();
+    unsigned long t = 0;
+    int c = 0, o = 0, r = 0;
+    if (sscanf(s.substring(pos, end).c_str(), "%lu,%d,%d,%d", &t, &c, &o, &r) == 4) {
+      evs[evCount++] = {(uint32_t)t, (uint8_t)c, o == 1, (uint8_t)r};
+    }
+    pos = end + 1;
+  }
+}
+
+void evTimeFix() {
+  if (unsyncedNew == 0) return;
+  time_t now = time(nullptr);
+  if (now < 1700000000) return;
+  int left = unsyncedNew;
+  for (int i = 0; i < evCount && left > 0; i++) {
+    if (evs[i].t == 0) { evs[i].t = (uint32_t)now; left--; }
+  }
+  unsyncedNew = 0;
+  evDirty = true;
+  evDirtyAt = millis();
+}
+
+void evSaveTick() {
+  if (evDirty && millis() - evDirtyAt > 2000) {
+    evSave();
+    evDirty = false;
+  }
 }
 
 uint32_t maskNow() {
@@ -36,6 +86,7 @@ uint32_t maskNow() {
 }
 
 void bootRestore() {
+  evLoad();
   bootMode = prefs.getString("bootmode", "last");
   swMode = prefs.getUChar("swmode", 0);
   savedMask = prefs.getUInt("mask", 0);
@@ -178,5 +229,7 @@ void featuresTick() {
   tmrTick();
   swTick();
   saveMaskTick();
+  evTimeFix();
+  evSaveTick();
   if (otaRebootAt && millis() > otaRebootAt) ESP.restart();
 }

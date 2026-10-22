@@ -31,6 +31,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
     }
 
     private suspend fun call(r: Request): List<Boolean>? = withContext(Dispatchers.IO) {
+        if (com.ibneilyas.home.core.BrandConfig.REQUIRE_GENUINE_CONTROLLER && genuineStatus() != "genuine") return@withContext null
         try {
             http.newCall(r).execute().use { resp ->
                 if (!resp.isSuccessful) return@withContext null
@@ -43,6 +44,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
     }
 
     private suspend fun text(r: Request): String? = withContext(Dispatchers.IO) {
+        if (com.ibneilyas.home.core.BrandConfig.REQUIRE_GENUINE_CONTROLLER && genuineStatus() != "genuine") return@withContext null
         try {
             http.newCall(r).execute().use { resp ->
                 if (resp.isSuccessful) resp.body!!.string() else null
@@ -75,7 +77,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun config(): String? = text(req("/api/config").build())
 
-    suspend fun info(): String? = text(req("/api/info").build())
+    suspend fun info(): String? = raw(req("/api/info").build())
 
     suspend fun setConfig(boot: String? = null, sw: Int? = null): String? {
         val parts = ArrayList<Pair<String, String>>()
@@ -107,5 +109,35 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
         } catch (e: Exception) {
             null
         }
+    }
+
+    @Volatile private var verdict: String? = null
+    @Volatile private var checkedAt = 0L
+
+    private suspend fun raw(r: Request): String? = withContext(Dispatchers.IO) {
+        try {
+            http.newCall(r).execute().use { resp -> if (resp.isSuccessful) resp.body!!.string() else null }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** "genuine", "unprovisioned", "oldfw" or "unreachable". A good answer is kept; a bad one is rechecked after 15 seconds. */
+    suspend fun genuineStatus(): String {
+        val v = verdict
+        if (v != null && (v == "genuine" || System.currentTimeMillis() - checkedAt < 15000)) return v
+        val info = raw(Request.Builder().url(baseUrl + "/api/info").build()) ?: return "unreachable"
+        val id = Regex("\"id\"\\s*:\\s*\"([^\"]*)\"").find(info)?.groupValues?.get(1).orEmpty()
+        val certJson = raw(Request.Builder().url(baseUrl + "/api/cert").build())
+        val cert = certJson?.let { Regex("\"cert\"\\s*:\\s*\"([^\"]*)\"").find(it)?.groupValues?.get(1) }.orEmpty()
+        val ok = com.ibneilyas.home.core.ControllerCert.ok(com.ibneilyas.home.core.LicenseKey.PUBLIC_B64, id, cert)
+        val s = when {
+            ok -> "genuine"
+            certJson == null -> "oldfw"
+            else -> "unprovisioned"
+        }
+        verdict = s
+        checkedAt = System.currentTimeMillis()
+        return s
     }
 }
