@@ -5,7 +5,7 @@
 #define MAX_TMR 8
 #define MAX_EV 20
 
-const uint8_t SW_PINS[] = {32, 33, 25, 26};
+const uint8_t SW_PINS[] = {32, 33, 25, 26, 4, 5, 13, 14};
 const int SWN = sizeof(SW_PINS);
 
 struct Tmr { bool active; uint8_t ch; bool on; uint32_t endMs; };
@@ -20,8 +20,8 @@ int unsyncedNew = 0;
 String bootMode = "last";
 uint8_t swMode = 0;
 uint32_t savedMask = 0, lastMask = 0, maskSince = 0;
-bool swLast[N], swStable[N];
-uint32_t swChange[N];
+bool swLast[NMAX], swStable[NMAX];
+uint32_t swChange[NMAX];
 uint8_t otaState = 0;
 uint32_t otaRebootAt = 0;
 
