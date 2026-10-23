@@ -79,6 +79,9 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun info(): String? = raw(req("/api/info").build())
 
+    suspend fun setChannels(n: Int): String? =
+        text(req("/api/channels").post(form("n" to n.toString())).build())
+
     suspend fun setConfig(boot: String? = null, sw: Int? = null): String? {
         val parts = ArrayList<Pair<String, String>>()
         if (boot != null) parts.add("boot" to boot)
