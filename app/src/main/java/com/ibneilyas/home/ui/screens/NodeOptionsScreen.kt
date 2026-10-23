@@ -43,11 +43,15 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
     var busy by remember { mutableStateOf(false) }
+    var chCount by remember { mutableStateOf(4) }
+    var pendingCh by remember { mutableStateOf(4) }
 
     suspend fun load() {
         val i = client.info()
         if (i == null) { status = "Cannot reach this ESP32"; return }
         installed = versionOf(i)
+        chCount = Regex("\"channels\":(\\d+)").find(i)?.groupValues?.get(1)?.toIntOrNull() ?: 4
+        pendingCh = chCount
         val c = client.config()
         supported = c != null
         if (c != null) {
@@ -128,6 +132,34 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     Button(onClick = { update() }, enabled = !busy) { Text("Update now") }
                 }
             }
+            Text("Channels", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = { if (pendingCh > 1) pendingCh-- }, enabled = !busy) { Text("\u2212") }
+                Text("$pendingCh", style = MaterialTheme.typography.titleLarge)
+                OutlinedButton(onClick = { if (pendingCh < 8) pendingCh++ }, enabled = !busy) { Text("+") }
+                Button(
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            status = "Applying..."
+                            val r = client.setChannels(pendingCh)
+                            if (r == null) {
+                                status = "Failed. Update the ESP32 firmware to 0.8.0 first."
+                            } else {
+                                status = "Restarting ESP32..."
+                                delay(9000)
+                                load()
+                            }
+                            busy = false
+                        }
+                    },
+                    enabled = !busy && pendingCh != chCount
+                ) { Text("Apply") }
+            }
+            Text(
+                "How many relays are fitted (1 to 8). The ESP32 restarts after Apply.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text("After a power cut", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = boot == "last", onClick = { saveBoot("last") }, label = { Text("Restore last state") }, enabled = supported)
@@ -144,7 +176,8 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 FilterChip(selected = sw == 2, onClick = { saveSwitch(2) }, label = { Text("Flip switch") }, enabled = supported)
             }
             Text(
-                "Inputs: GPIO 32, 33, 25, 26 = channels 1 to 4, wired as a low-voltage contact to GND. " +
+                "Relay outputs: GPIO 16, 17, 18, 19 = channels 1 to 4; GPIO 21, 22, 23, 27 = channels 5 to 8. " +
+                "Inputs: GPIO 32, 33, 25, 26 = channels 1 to 4; GPIO 4, 5, 13, 14 = channels 5 to 8, wired as a low-voltage contact to GND. " +
                     "Never connect mains wiring to the ESP32. Use an isolated sensing module fitted by an electrician.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
