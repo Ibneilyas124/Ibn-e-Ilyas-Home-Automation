@@ -31,6 +31,9 @@ jobs:
           V=$(grep -o '#define FW_VERSION "[^"]*"' firmware/esp32-node/esp32-node.ino | cut -d'"' -f2)
           esptool.py --chip esp32 merge_bin -o "dist/ibn-firmware-$V-full.bin" --flash_mode dio --flash_freq 40m --flash_size 4MB 0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 $A 0x10000 $B/firmware.bin
           cp $B/firmware.bin "dist/ibn-firmware-$V-ota.bin"
+          mkdir -p app/src/main/assets
+          cp "dist/ibn-firmware-$V-full.bin" app/src/main/assets/firmware-full.bin
+          echo "$V" > app/src/main/assets/firmware-version.txt
       - name: Java for APK
         if: github.event.repository.private == true || vars.INCLUDE_APK == 'true'
         uses: actions/setup-java@v4

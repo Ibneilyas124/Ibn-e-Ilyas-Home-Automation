@@ -15,6 +15,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build firmware for the app
+        run: |
+          pip install platformio esptool==4.7.0
+          pio run
+          B=.pio/build/esp32dev
+          A=$HOME/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin
+          mkdir -p app/src/main/assets
+          esptool.py --chip esp32 merge_bin -o app/src/main/assets/firmware-full.bin --flash_mode dio --flash_freq 40m --flash_size 4MB 0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 $A 0x10000 $B/firmware.bin
+          grep -o '#define FW_VERSION "[^"]*"' firmware/esp32-node/esp32-node.ino | cut -d'"' -f2 > app/src/main/assets/firmware-version.txt
+          [ "$(wc -c < app/src/main/assets/firmware-full.bin)" -gt 500000 ] || { echo "FAILED: firmware bundle chhota hai"; exit 1; }
       - name: Signing key
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
