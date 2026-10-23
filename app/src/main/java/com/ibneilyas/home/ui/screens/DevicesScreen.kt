@@ -20,12 +20,24 @@ import com.ibneilyas.home.ui.components.TextDialog
 fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     val nodes by vm.nodes.collectAsState()
     val d by vm.data.collectAsState()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     var room by remember { mutableStateOf("") }
     var ip by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
     var tokenFor by remember { mutableStateOf<String?>(null) }
+    var pasteOpen by remember { mutableStateOf(false) }
+    var pasteMsg by remember { mutableStateOf("") }
     tokenFor?.let { id ->
         TextDialog("Enter token", "", { vm.setToken(id, it); tokenFor = null }, { tokenFor = null })
+    }
+    if (pasteOpen) {
+        TextDialog("Paste setup code", "", { code ->
+            val t = decodeSetup(code)
+            pasteMsg = if (t == null) "Invalid code"
+            else if (nodes.any { it.ip == t.second.trim() }) "Already added"
+            else { vm.addNode(t.first, t.second, t.third); "Added" }
+            pasteOpen = false
+        }, { pasteOpen = false })
     }
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -67,11 +79,23 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                         if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
                         if (!d.mockMode) TextButton(onClick = { onSchedules("opt:" + n.id) }) { Text("Options") }
                         TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }
+                        if (n.token.isNotBlank()) TextButton(onClick = {
+                            val i = android.content.Intent(android.content.Intent.ACTION_SEND)
+                                .setType("text/plain")
+                                .putExtra(android.content.Intent.EXTRA_TEXT, "Ibn e Ilyas Home setup code:\n" + encodeSetup(n.room, n.ip, n.token))
+                            ctx.startActivity(android.content.Intent.createChooser(i, "Share setup code").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }) { Text("Share") }
                     }
                     IconButton(onClick = { vm.removeNode(n.id) }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Remove")
                     }
                 }
+            }
+        }
+        item {
+            Column {
+                OutlinedButton(onClick = { pasteOpen = true }, modifier = Modifier.fillMaxWidth()) { Text("Paste setup code") }
+                if (pasteMsg.isNotEmpty()) Text(pasteMsg, style = MaterialTheme.typography.bodySmall)
             }
         }
         item { DiscoverySection(vm) }
@@ -108,5 +132,25 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Add ESP32") }
         }
+    }
+}
+
+private fun encodeSetup(room: String, ip: String, token: String): String {
+    val raw = "$room\n$ip\n$token"
+    return "IBN1:" + android.util.Base64.encodeToString(
+        raw.toByteArray(Charsets.UTF_8),
+        android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE
+    )
+}
+
+private fun decodeSetup(code: String): Triple<String, String, String>? {
+    val s = code.trim()
+    if (!s.startsWith("IBN1:")) return null
+    return try {
+        val raw = String(android.util.Base64.decode(s.removePrefix("IBN1:"), android.util.Base64.URL_SAFE), Charsets.UTF_8)
+        val p = raw.split("\n")
+        if (p.size == 3 && p[0].isNotBlank() && p[1].isNotBlank() && p[2].isNotBlank()) Triple(p[0], p[1], p[2]) else null
+    } catch (e: IllegalArgumentException) {
+        null
     }
 }
