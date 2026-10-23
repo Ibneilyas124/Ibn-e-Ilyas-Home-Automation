@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.components.NodeStatus
+import com.ibneilyas.home.ui.components.FlashSection
 import com.ibneilyas.home.ui.components.TextDialog
 
 @Composable
@@ -99,6 +100,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
             }
         }
         item { DiscoverySection(vm) }
+        item { FlashSection() }
         item {
             Spacer(Modifier.height(8.dp))
             Text("Add ESP32", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
