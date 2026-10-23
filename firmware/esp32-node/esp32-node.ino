@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.8.0"
+#define FW_VERSION "0.9.0"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
@@ -94,6 +94,8 @@ void connectWifi() {
 #include "lock.h"
 #include "seats.h"
 
+#include "persist.h"
+
 void setup() {
   Serial.begin(115200);
   prefs.begin("ibn", false);
@@ -161,6 +163,7 @@ void loop() {
   schedTick();
   wsLoop();
   featuresTick();
+  persistTick();
   static uint32_t lastTry = 0;
   if (WiFi.status() != WL_CONNECTED) {
     if (millis() - lastTry > 5000) { lastTry = millis(); WiFi.reconnect(); }
