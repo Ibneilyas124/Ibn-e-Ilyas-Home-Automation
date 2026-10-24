@@ -31,6 +31,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    packaging { resources { excludes += listOf("META-INF/INDEX.LIST", "META-INF/io.netty.versions.properties") } }
     buildTypes {
         getByName("debug") {
             signingConfigs.findByName("ibn")?.let { signingConfig = it }
@@ -48,6 +49,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.hivemq:hivemq-mqtt-client:1.3.14")
     implementation("com.github.mik3y:usb-serial-for-android:3.7.3")
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
