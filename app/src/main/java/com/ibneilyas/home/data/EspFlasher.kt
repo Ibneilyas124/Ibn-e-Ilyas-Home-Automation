@@ -169,7 +169,7 @@ object EspFlasher {
                 if (f.size < 10 || f[0].toInt() != 1 || (f[1].toInt() and 0xFF) != op) continue
                 val st = f[f.size - 2].toInt() and 0xFF
                 val er = f[f.size - 1].toInt() and 0xFF
-                if (st != 0) throw IllegalStateException("ESP32 ne command 0x%02X rad ki (error %d)".format(op, er))
+                if (st != 0) throw IllegalStateException("ESP32 ne command 0x%02X rad ki (status %d, error %d, frame %s)".format(op, st, er, f.joinToString(" ") { "%02X".format(it) }))
                 return Pair(rd32(f, 4), f.copyOfRange(8, f.size - 2))
             }
             throw IllegalStateException("ESP32 ne jawab nahi diya (command 0x%02X)".format(op))
@@ -221,7 +221,7 @@ object EspFlasher {
             cmd(0x0D, ByteArray(8))
             cmd(0x0B, le32(0) + le32(4 * 1024 * 1024) + le32(0x10000) + le32(0x1000) + le32(0x100) + le32(0xFFFF))
             val total = image.size
-            val regions = listOf(Pair(0, 0x9000), Pair(0xE000, total - 0xE000))
+            val regions = listOf(Pair(0x1000, 0x8000), Pair(0xE000, total - 0xE000))
             val all = regions.sumOf { it.second }
             var done = 0
             for ((off, len) in regions) {
