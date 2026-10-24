@@ -2,6 +2,8 @@ package com.ibneilyas.home.data
 
 import com.ibneilyas.home.domain.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +13,9 @@ import kotlinx.coroutines.launch
 /** REAL MODE: many ESP32 nodes. One room per node, channels come from the device. */
 class MultiNodeRepository(
     private val configs: List<NodeConfig>,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    private val remote: MqttRemote? = null,
+    private val onEspId: ((String, String) -> Unit)? = null
 ) : HomeRepository {
 
     private data class Live(
@@ -28,12 +32,54 @@ class MultiNodeRepository(
 
     init { publish() }
 
+    private val espIds = configs.associate { it.id to it.espId }.toMutableMap()
+    private val remoteLast = mutableMapOf<String, List<Boolean>>()
+
+    init {
+        remote?.start { eid, list -> scope.launch { onRemote(eid, list) } }
+    }
+
+    private fun onRemote(eid: String, list: List<Boolean>) {
+        val id = espIds.entries.firstOrNull { it.value == eid }?.key ?: return
+        remoteLast[id] = list
+        refresh(id, list)
+    }
+
+    private suspend fun pollOne(id: String) {
+        val l = clients.getValue(id).state()
+        if (l != null) {
+            learnEspId(id)
+            refresh(id, l)
+        } else {
+            refresh(id, remoteLast[id])
+        }
+    }
+
+    private suspend fun learnEspId(id: String) {
+        if (remote == null || !espIds[id].isNullOrEmpty()) return
+        val txt = clients.getValue(id).info() ?: return
+        val eid = try { org.json.JSONObject(txt).getString("id") } catch (e: Exception) { return }
+        espIds[id] = eid
+        onEspId?.invoke(id, eid)
+    }
+
+    private suspend fun viaRemote(id: String, ch: Int, want: Boolean): List<Boolean>? {
+        val r = remote ?: return null
+        val eid = espIds[id]
+        if (eid.isNullOrEmpty()) return null
+        val token = configs.firstOrNull { it.id == id }?.token ?: return null
+        val ok = withContext(Dispatchers.IO) { r.command(eid, ch, want, token) }
+        if (!ok) return null
+        val base = live[id]?.ch?.takeIf { it.isNotEmpty() } ?: remoteLast[id] ?: return null
+        return base.mapIndexed { i, v -> if (i == ch - 1) want else v }
+    }
+
     private val hub = SocketHub(configs) { id, list -> scope.launch { refresh(id, list) } }
     private val jobs = configs.map { c ->
         scope.launch {
             while (true) {
                 hub.ensure(c.id)
-                refresh(c.id, clients.getValue(c.id).state())
+                pollOne(c.id)
                 delay(if (hub.isOpen(c.id)) 8000 else 3000)
             }
         }
@@ -42,6 +88,7 @@ class MultiNodeRepository(
     fun close() {
         jobs.forEach { it.cancel() }
         hub.closeAll()
+        remote?.close()
     }
 
     private fun refresh(id: String, list: List<Boolean>?) {
@@ -80,7 +127,8 @@ class MultiNodeRepository(
         val on = live[id]?.ch?.getOrNull(ch - 1) ?: false
         cmd[applianceId] = CmdState.SENDING
         publish()
-        val res = client.setChannel(ch, !on)
+        var res = client.setChannel(ch, !on)
+        if (res == null) res = viaRemote(id, ch, !on)
         cmd[applianceId] = if (res != null) CmdState.IDLE else CmdState.FAILED
         if (res != null) refresh(id, res) else publish()
     }
