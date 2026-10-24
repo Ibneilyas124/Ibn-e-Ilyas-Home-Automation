@@ -43,6 +43,8 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
     var busy by remember { mutableStateOf(false) }
+    var certTicket by remember { mutableStateOf("") }
+    var certMsg by remember { mutableStateOf("") }
     var chCount by remember { mutableStateOf(4) }
     var pendingCh by remember { mutableStateOf(4) }
 
@@ -181,6 +183,23 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     "Never connect mains wiring to the ESP32. Use an isolated sensing module fitted by an electrician.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text("Certificate", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = certTicket, onValueChange = { certTicket = it },
+                label = { Text("Ticket (IBN-TICKET:...)") }, maxLines = 3,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        certMsg = applyCert(client, certTicket)
+                        busy = false
+                    }
+                },
+                enabled = !busy && certTicket.isNotBlank()
+            ) { Text("Apply certificate") }
+            if (certMsg.isNotEmpty()) Text(certMsg, style = MaterialTheme.typography.bodySmall)
             Text("Active timers", style = MaterialTheme.typography.titleMedium)
             if (timers.isEmpty()) Text("No timer running.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             timers.forEach { (ch, on, left) ->
@@ -193,4 +212,15 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             OutlinedButton(onClick = { scope.launch { load() } }) { Text("Refresh") }
         }
     }
+}
+
+private suspend fun applyCert(client: HttpNodeClient, ticket: String): String {
+    val p = ticket.trim().split(":")
+    if (p.size != 3 || p[0] != "IBN-TICKET") return "Ticket ka format ghalat hai"
+    if (!com.ibneilyas.home.core.ControllerCert.ok(com.ibneilyas.home.core.LicenseKey.PUBLIC_B64, p[1], p[2])) return "Ticket sahi nahi"
+    val info = client.info() ?: return "ESP32 tak nahi pahunch saka"
+    val id = Regex("\"id\":\"([^\"]*)\"").find(info)?.groupValues?.get(1).orEmpty()
+    if (id != p[1]) return "Yeh ticket " + p[1] + " ke liye hai, lekin yeh ESP32 " + id + " hai"
+    val r = client.provision(p[2]) ?: return "Nahi hua. Token aur firmware (0.7.0 ya naya) check karein."
+    return if (Regex("\"ok\": *true").containsMatchIn(r)) "Certificate lag gaya." else "Jawab: " + r
 }

@@ -79,6 +79,9 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun info(): String? = raw(req("/api/info").build())
 
+    suspend fun provision(cert: String): String? =
+        text(req("/api/provision").post(form("cert" to cert)).build())
+
     suspend fun setChannels(n: Int): String? =
         text(req("/api/channels").post(form("n" to n.toString())).build())
 
