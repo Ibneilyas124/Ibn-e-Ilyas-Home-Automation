@@ -1,3 +1,7 @@
 name = "ibn-home-cloud"
 main = "src/index.js"
 compatibility_date = "2025-10-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "5cbde16e4a2046d58e99df831934ad01"
