@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 
 /** REAL ESP32 MODE: talks to one node over the local network. */
 class HttpNodeClient(private val baseUrl: String, private val token: String) {
+    var lastError: String = ""
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(3, TimeUnit.SECONDS)
@@ -101,9 +102,9 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
             val body = MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("update", "app.bin", bin.toRequestBody("application/octet-stream".toMediaType()))
                 .build()
-            slow.newCall(req("/api/ota").post(body).build()).execute().use { it.isSuccessful }
+            slow.newCall(req("/api/ota").post(body).build()).execute().use { r -> lastError = "HTTP " + r.code; r.isSuccessful }
         } catch (e: Exception) {
-            false
+            lastError = e.javaClass.simpleName + ": " + (e.message ?: ""); false
         }
     }
 
