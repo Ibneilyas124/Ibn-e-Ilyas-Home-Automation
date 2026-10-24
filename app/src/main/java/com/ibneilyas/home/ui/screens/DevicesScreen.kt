@@ -101,6 +101,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         }
         item { DiscoverySection(vm) }
         item { FlashSection() }
+        item { RemoteSection(vm) }
         item {
             Spacer(Modifier.height(8.dp))
             Text("Add ESP32", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)

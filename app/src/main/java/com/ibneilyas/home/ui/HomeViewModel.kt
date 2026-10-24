@@ -50,7 +50,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun build(): HomeRepository {
         val list = store.load()
-        return if (store.real && list.isNotEmpty()) MultiNodeRepository(list, viewModelScope)
+        return if (store.real && list.isNotEmpty()) MultiNodeRepository(list, viewModelScope, makeRemote(), onEspId = { id, eid -> store.setEspId(id, eid) })
         else MockHomeRepository(getApplication<Application>())
     }
 
@@ -80,6 +80,21 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun useMock() { store.real = false; swap() }
 
     fun useReal() { store.real = true; swap() }
+
+    private fun makeRemote(): MqttRemote? =
+        if (store.remoteHost.isNotBlank() && store.remoteUser.isNotBlank() && store.remotePass.isNotEmpty())
+            MqttRemote(store.remoteHost, store.remoteUser, store.remotePass)
+        else null
+
+    fun remoteSettings(): Triple<String, String, String> =
+        Triple(store.remoteHost, store.remoteUser, store.remotePass)
+
+    fun setRemote(host: String, user: String, pass: String) {
+        store.remoteHost = host
+        store.remoteUser = user
+        store.remotePass = pass
+        swap()
+    }
 
     fun toggle(applianceId: String) {
         viewModelScope.launch { repo.value.toggle(applianceId) }
