@@ -5,5 +5,5 @@ object BrandConfig {
     const val COMPANY_NAME = "Ibn e Ilyas Technologies"
     const val DEFAULT_SUBTITLE = "Sarfraz Qureshi Home Automation"
     const val OWNER_NAME = "Sarfraz Qureshi"
-    const val REQUIRE_GENUINE_CONTROLLER = false
+    const val REQUIRE_GENUINE_CONTROLLER = true
 }
