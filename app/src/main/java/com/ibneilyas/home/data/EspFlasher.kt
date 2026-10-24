@@ -93,6 +93,7 @@ object EspFlasher {
     private class Session(val port: UsbSerialPort, val log: (String) -> Unit) {
         private val rx = ArrayDeque<Int>()
         private val tmp = ByteArray(4096)
+        private var statusLen = 4
 
         private fun le32(v: Int) = byteArrayOf(v.toByte(), (v shr 8).toByte(), (v shr 16).toByte(), (v shr 24).toByte())
         private fun rd32(b: ByteArray, o: Int) = (b[o].toInt() and 0xFF) or ((b[o + 1].toInt() and 0xFF) shl 8) or
@@ -167,10 +168,13 @@ object EspFlasher {
                 if (left <= 0) break
                 val f = readFrame(left) ?: break
                 if (f.size < 10 || f[0].toInt() != 1 || (f[1].toInt() and 0xFF) != op) continue
-                val st = f[f.size - 2].toInt() and 0xFF
-                val er = f[f.size - 1].toInt() and 0xFF
+                val n = f.size - 8
+                if (n <= 4) statusLen = n
+                val so = 8 + n - statusLen
+                val st = f[so].toInt() and 0xFF
+                val er = f[so + 1].toInt() and 0xFF
                 if (st != 0) throw IllegalStateException("ESP32 ne command 0x%02X rad ki (status %d, error %d, frame %s)".format(op, st, er, f.joinToString(" ") { "%02X".format(it) }))
-                return Pair(rd32(f, 4), f.copyOfRange(8, f.size - 2))
+                return Pair(rd32(f, 4), f.copyOfRange(8, so))
             }
             throw IllegalStateException("ESP32 ne jawab nahi diya (command 0x%02X)".format(op))
         }
