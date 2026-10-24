@@ -1,4 +1,5 @@
 package com.ibneilyas.home.ui.screens
+import androidx.compose.foundation.clickable
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     var tokenFor by remember { mutableStateOf<String?>(null) }
     var pasteOpen by remember { mutableStateOf(false) }
     var pasteMsg by remember { mutableStateOf("") }
+    var devTaps by remember { mutableStateOf(0) }
     tokenFor?.let { id ->
         TextDialog("Enter token", "", { vm.setToken(id, it); tokenFor = null }, { tokenFor = null })
     }
@@ -46,7 +48,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Devices", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Devices", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { devTaps++ })
             if (d.mockMode) {
                 Text(
                     "Mock mode is active. Add an ESP32 to use real mode.",
@@ -101,7 +103,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         }
         item { DiscoverySection(vm) }
         item { FlashSection() }
-        item { RemoteSection(vm) }
+        if (devTaps >= 5) item { RemoteSection(vm) }
         item {
             Spacer(Modifier.height(8.dp))
             Text("Add ESP32", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
