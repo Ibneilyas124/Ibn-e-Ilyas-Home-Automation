@@ -95,7 +95,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         val bin = FirmwareHub.download()
         if (bin == null) { status = "Download failed"; busy = false; return@launch }
         status = "Uploading to the ESP32. Do not switch off the power..."
-        if (!client.uploadFirmware(bin)) { status = "Upload failed. Nothing was changed."; busy = false; return@launch }
+        if (!client.uploadFirmware(bin)) { status = "Upload failed (" + client.lastError + "). Nothing was changed."; busy = false; return@launch }
         status = "Restarting the ESP32..."
         var done = false
         for (k in 1..30) {
