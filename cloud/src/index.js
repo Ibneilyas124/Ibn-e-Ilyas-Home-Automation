@@ -200,6 +200,20 @@ async function fulfillment(req, env) {
   return json({ requestId, error: "unsupported_intent" }, 400);
 }
 
+async function stateHook(req, env) {
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const key = req.headers.get("x-hook-key") || "";
+  if (!env.STATE_HOOK_KEY || !(await same(key, env.STATE_HOOK_KEY))) return json({ error: "unauthorized" }, 401);
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  let p = b && b.payload !== undefined ? b.payload : b;
+  if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) { return json({ error: "bad_payload" }, 400); } }
+  if (!p || p.id !== ESP || !Array.isArray(p.channels)) return json({ error: "bad_payload" }, 400);
+  const n = Math.min(p.channels.length, 4);
+  for (let i = 0; i < n; i++) await env.KV.put("st:" + (i + 1), p.channels[i] ? "1" : "0");
+  return json({ ok: true });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -214,13 +228,15 @@ export default {
           PASSCODE: !!env.PASSCODE,
           OAUTH_CLIENT_ID: !!env.OAUTH_CLIENT_ID,
           OAUTH_CLIENT_SECRET: !!env.OAUTH_CLIENT_SECRET,
-          ESP32_TOKEN: !!env.ESP32_TOKEN
+          ESP32_TOKEN: !!env.ESP32_TOKEN,
+          STATE_HOOK_KEY: !!env.STATE_HOOK_KEY
         }
       });
     }
     if (u.pathname === "/oauth/authorize") return authorize(req, env, u);
     if (u.pathname === "/oauth/token") return token(req, env);
     if (u.pathname === "/fulfillment") return fulfillment(req, env);
+    if (u.pathname === "/state-hook") return stateHook(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
