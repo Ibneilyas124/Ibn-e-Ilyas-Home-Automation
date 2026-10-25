@@ -34,15 +34,25 @@ class MultiNodeRepository(
 
     private val espIds = configs.associate { it.id to it.espId }.toMutableMap()
     private val remoteLast = mutableMapOf<String, List<Boolean>>()
+    private val remoteOnline = mutableMapOf<String, Boolean>()
 
     init {
-        remote?.start { eid, list -> scope.launch { onRemote(eid, list) } }
+        remote?.start(
+            { eid, list -> scope.launch { onRemote(eid, list) } },
+            { eid, on -> scope.launch { onRemoteOnline(eid, on) } }
+        )
     }
 
     private fun onRemote(eid: String, list: List<Boolean>) {
         val id = espIds.entries.firstOrNull { it.value == eid }?.key ?: return
         remoteLast[id] = list
-        refresh(id, list)
+        if (remoteOnline[id] == true) refresh(id, list)
+    }
+
+    private fun onRemoteOnline(eid: String, on: Boolean) {
+        val id = espIds.entries.firstOrNull { it.value == eid }?.key ?: return
+        remoteOnline[id] = on
+        refresh(id, if (on) remoteLast[id] else null)
     }
 
     private suspend fun pollOne(id: String) {
@@ -51,7 +61,7 @@ class MultiNodeRepository(
             learnEspId(id)
             refresh(id, l)
         } else {
-            refresh(id, remoteLast[id])
+            refresh(id, if (remoteOnline[id] == true) remoteLast[id] else null)
         }
     }
 

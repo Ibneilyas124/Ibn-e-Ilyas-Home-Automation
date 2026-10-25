@@ -14,6 +14,7 @@ class MqttRemote(
     private val pass: String
 ) {
     @Volatile private var onState: ((String, List<Boolean>) -> Unit)? = null
+    @Volatile private var onOnline: ((String, Boolean) -> Unit)? = null
 
     private val client: Mqtt3AsyncClient = MqttClient.builder()
         .identifier("ibn-app-" + UUID.randomUUID())
@@ -32,6 +33,17 @@ class MqttRemote(
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { p -> parse(p.payloadAsBytes, cb) }
             .send()
+        val ol = onOnline
+        if (ol != null) {
+            client.subscribeWith()
+                .topicFilter("ibn/+/online")
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .callback { p ->
+                    val parts = p.topic.toString().split("/")
+                    if (parts.size == 3) ol(parts[1], String(p.payloadAsBytes, Charsets.UTF_8).trim() == "1")
+                }
+                .send()
+        }
     }
 
     private fun parse(b: ByteArray, cb: (String, List<Boolean>) -> Unit) {
@@ -43,8 +55,9 @@ class MqttRemote(
         }
     }
 
-    fun start(cb: (String, List<Boolean>) -> Unit) {
+    fun start(cb: (String, List<Boolean>) -> Unit, onl: (String, Boolean) -> Unit) {
         onState = cb
+        onOnline = onl
         client.connectWith()
             .simpleAuth()
             .username(user)
