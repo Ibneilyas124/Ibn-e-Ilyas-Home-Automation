@@ -6,4 +6,6 @@ object BrandConfig {
     const val DEFAULT_SUBTITLE = "Sarfraz Qureshi Home Automation"
     const val OWNER_NAME = "Sarfraz Qureshi"
     const val REQUIRE_GENUINE_CONTROLLER = false
+    /** DEV ONLY: true skips the flash ticket check. Set to false before release. */
+    const val DEV_SKIP_TICKET = true
 }

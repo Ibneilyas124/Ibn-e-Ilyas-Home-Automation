@@ -30,16 +30,17 @@ object EspFlasher {
         withSession(ctx, log) { it.deviceId() }
 
     suspend fun flash(ctx: Context, ticket: String, log: (String) -> Unit, progress: (Int) -> Unit) {
+        val skip = com.ibneilyas.home.core.BrandConfig.DEV_SKIP_TICKET
         val p = ticket.trim().split(":")
-        if (p.size != 3 || p[0] != "IBN-TICKET") throw IllegalStateException("Ticket ka format ghalat hai (IBN-TICKET:ID:KEY)")
-        val tid = p[1]
-        if (!ControllerCert.ok(LicenseKey.PUBLIC_B64, tid, p[2])) throw IllegalStateException("Ticket sahi nahi (signature match nahi hui)")
+        if (!skip && (p.size != 3 || p[0] != "IBN-TICKET")) throw IllegalStateException("Ticket ka format ghalat hai (IBN-TICKET:ID:KEY)")
+        val tid = p.getOrElse(1) { "" }
+        if (!skip && !ControllerCert.ok(LicenseKey.PUBLIC_B64, tid, p.getOrElse(2) { "" })) throw IllegalStateException("Ticket sahi nahi (signature match nahi hui)")
         val image = ctx.applicationContext.assets.open("firmware-full.bin").use { it.readBytes() }
         if (image.size < 0xE000 + 100000 || image.size > 3000000) throw IllegalStateException("Bundled firmware ka size ghalat hai")
         withSession(ctx, log) { s ->
             val id = s.deviceId()
-            if (id != tid) throw IllegalStateException("Yeh ticket $tid ke liye hai, lekin yeh ESP32 $id hai. Flash nahi kiya.")
-            log("Ticket theek hai. Flash shuru...")
+            if (!skip && id != tid) throw IllegalStateException("Yeh ticket $tid ke liye hai, lekin yeh ESP32 $id hai. Flash nahi kiya.")
+            log(if (skip) "Dev mode: ticket check band. Flash shuru..." else "Ticket theek hai. Flash shuru...")
             s.flash(image, log, progress)
             log("Flash mukammal, MD5 theek. ESP32 restart ho raha hai...")
             s.bootLog(6000, log)

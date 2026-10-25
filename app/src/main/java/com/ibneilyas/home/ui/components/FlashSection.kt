@@ -54,7 +54,7 @@ fun FlashSection() {
                     busy = false
                 }
             },
-            enabled = !busy && ticket.isNotBlank(),
+            enabled = !busy && (ticket.isNotBlank() || com.ibneilyas.home.core.BrandConfig.DEV_SKIP_TICKET),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text("Flash firmware") }
         if (progress in 0..100) LinearProgressIndicator(progress = progress / 100f, modifier = Modifier.fillMaxWidth())
