@@ -146,19 +146,20 @@ async function fulfillment(req, env) {
   const requestId = body.requestId;
   const input = (body.inputs || [])[0] || {};
   const intent = input.intent || "";
+  const cfg = await loadCfg(env);
 
   if (intent === "action.devices.SYNC") {
     return json({
       requestId,
       payload: {
         agentUserId: "ibn-owner",
-        devices: DEVICES.map(d => ({
+        devices: cfg.devices.map(d => ({
           id: `${ESP}:${d.ch}`,
           type: d.type,
           traits: ["action.devices.traits.OnOff"],
           name: { name: d.name, defaultNames: [d.name], nicknames: [d.name] },
           willReportState: false,
-          roomHint: ROOM
+          roomHint: cfg.room
         }))
       }
     });
@@ -214,6 +215,56 @@ async function stateHook(req, env) {
   return json({ ok: true });
 }
 
+const TYPES = {
+  light: "action.devices.types.LIGHT", fan: "action.devices.types.FAN",
+  outlet: "action.devices.types.OUTLET", switch: "action.devices.types.SWITCH",
+  tv: "action.devices.types.TV", heater: "action.devices.types.HEATER", ac: "action.devices.types.AC_UNIT"
+};
+
+async function loadCfg(env) {
+  try {
+    const raw = await env.KV.get("cfg");
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && Array.isArray(c.devices) && c.devices.length) return c;
+    }
+  } catch (e) {}
+  return { room: ROOM, devices: DEVICES };
+}
+
+async function adminConfig(req, env) {
+  const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  if (!(await same(req.headers.get("x-admin-key") || "", env.PASSCODE))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "unauthorized" }, 401);
+  }
+  if (req.method === "GET") return json(await loadCfg(env));
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const room = String(b.room || "").trim();
+  if (!room || room.length > 40 || !Array.isArray(b.devices) || b.devices.length < 1 || b.devices.length > 4) {
+    return json({ error: "bad_config" }, 400);
+  }
+  const devices = [];
+  const seen = new Set();
+  for (const d of b.devices) {
+    const ch = parseInt(d.ch, 10);
+    const name = String(d.name || "").trim();
+    const type = TYPES[String(d.type || "").toLowerCase()];
+    if (!(ch >= 1 && ch <= 4) || seen.has(ch) || !name || name.length > 30 || !type) {
+      return json({ error: "bad_device" }, 400);
+    }
+    seen.add(ch);
+    devices.push({ ch, type, name });
+  }
+  const cfg = { room, devices };
+  await env.KV.put("cfg", JSON.stringify(cfg));
+  return json({ ok: true, cfg });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -237,6 +288,7 @@ export default {
     if (u.pathname === "/oauth/token") return token(req, env);
     if (u.pathname === "/fulfillment") return fulfillment(req, env);
     if (u.pathname === "/state-hook") return stateHook(req, env);
+    if (u.pathname === "/admin/config") return adminConfig(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
