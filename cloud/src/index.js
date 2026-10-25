@@ -97,6 +97,109 @@ async function token(req, env) {
   return json({ error: "unsupported_grant_type" }, 400);
 }
 
+const ESP = "ESP32-24BD6F";
+const PUBLISH_URL = "https://i1301b28.ala.us-east-1.emqxsl.com:8443/api/v5/publish";
+const ROOM = "Room 1";
+const DEVICES = [
+  { ch: 1, type: "action.devices.types.FAN", name: "Fan" },
+  { ch: 2, type: "action.devices.types.OUTLET", name: "Socket" },
+  { ch: 3, type: "action.devices.types.LIGHT", name: "Light" },
+  { ch: 4, type: "action.devices.types.TV", name: "TV" }
+];
+
+function chOf(id) {
+  const s = String(id);
+  if (!s.startsWith(ESP + ":")) return 0;
+  const n = parseInt(s.slice(ESP.length + 1), 10);
+  return n >= 1 && n <= 4 ? n : 0;
+}
+
+async function setCh(env, ch, on) {
+  try {
+    const r = await fetch(PUBLISH_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET)
+      },
+      body: JSON.stringify({
+        topic: `ibn/${ESP}/cmd/${ch}`,
+        payload: `${env.ESP32_TOKEN}:${on ? 1 : 0}`,
+        qos: 1
+      })
+    });
+    if (!r.ok) return false;
+    await env.KV.put("st:" + ch, on ? "1" : "0");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function fulfillment(req, env) {
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const auth = req.headers.get("authorization") || "";
+  const tok = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!tok || !(await env.KV.get("at:" + tok))) return json({ error: "unauthorized" }, 401);
+  let body;
+  try { body = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const requestId = body.requestId;
+  const input = (body.inputs || [])[0] || {};
+  const intent = input.intent || "";
+
+  if (intent === "action.devices.SYNC") {
+    return json({
+      requestId,
+      payload: {
+        agentUserId: "ibn-owner",
+        devices: DEVICES.map(d => ({
+          id: `${ESP}:${d.ch}`,
+          type: d.type,
+          traits: ["action.devices.traits.OnOff"],
+          name: { name: d.name, defaultNames: [d.name], nicknames: [d.name] },
+          willReportState: false,
+          roomHint: ROOM
+        }))
+      }
+    });
+  }
+
+  if (intent === "action.devices.QUERY") {
+    const out = {};
+    for (const d of (input.payload && input.payload.devices) || []) {
+      const ch = chOf(d.id);
+      if (!ch) { out[d.id] = { status: "ERROR", errorCode: "deviceNotFound" }; continue; }
+      out[d.id] = { status: "SUCCESS", online: true, on: (await env.KV.get("st:" + ch)) === "1" };
+    }
+    return json({ requestId, payload: { devices: out } });
+  }
+
+  if (intent === "action.devices.EXECUTE") {
+    const results = [];
+    for (const c of (input.payload && input.payload.commands) || []) {
+      const ids = (c.devices || []).map(d => d.id);
+      for (const e of c.execution || []) {
+        if (e.command !== "action.devices.commands.OnOff") {
+          results.push({ ids, status: "ERROR", errorCode: "functionNotSupported" });
+          continue;
+        }
+        const on = !!(e.params && e.params.on);
+        for (const id of ids) {
+          const ch = chOf(id);
+          const ok = ch ? await setCh(env, ch, on) : false;
+          results.push(ok
+            ? { ids: [id], status: "SUCCESS", states: { on, online: true } }
+            : { ids: [id], status: "ERROR", errorCode: ch ? "hardError" : "deviceNotFound" });
+        }
+      }
+    }
+    return json({ requestId, payload: { commands: results } });
+  }
+
+  if (intent === "action.devices.DISCONNECT") return json({});
+  return json({ requestId, error: "unsupported_intent" }, 400);
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -110,12 +213,14 @@ export default {
           EMQX_API_SECRET: !!env.EMQX_API_SECRET,
           PASSCODE: !!env.PASSCODE,
           OAUTH_CLIENT_ID: !!env.OAUTH_CLIENT_ID,
-          OAUTH_CLIENT_SECRET: !!env.OAUTH_CLIENT_SECRET
+          OAUTH_CLIENT_SECRET: !!env.OAUTH_CLIENT_SECRET,
+          ESP32_TOKEN: !!env.ESP32_TOKEN
         }
       });
     }
     if (u.pathname === "/oauth/authorize") return authorize(req, env, u);
     if (u.pathname === "/oauth/token") return token(req, env);
+    if (u.pathname === "/fulfillment") return fulfillment(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
