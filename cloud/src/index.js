@@ -362,6 +362,47 @@ async function adminProbe(req, env) {
   return json({ ok: true, out });
 }
 
+async function adminProbeWrite(req, env) {
+  const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  if (!(await same(req.headers.get("x-admin-key") || "", env.PASSCODE))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "unauthorized" }, 401);
+  }
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const base = PUBLISH_URL.replace(/\/publish$/, "");
+  const H = { authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET), "content-type": "application/json" };
+  const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const U = "ibn_probe_" + rnd(4);
+  const pw = rnd(12);
+  const A = "/authentication/password_based:built_in_database/users";
+  const Z = "/authorization/sources/built_in_database/rules/users";
+  const rules = [
+    { topic: "ibn/PROBE/#", action: "all", permission: "allow" },
+    { topic: "#", action: "all", permission: "deny" }
+  ];
+  const steps = [
+    ["create_user", "POST", A, { user_id: U, password: pw, is_superuser: false }],
+    ["set_acl", "POST", Z, [{ username: U, rules }]],
+    ["read_acl", "GET", Z + "/" + U, null],
+    ["del_acl", "DELETE", Z + "/" + U, null],
+    ["del_user", "DELETE", A + "/" + U, null]
+  ];
+  const out = [];
+  for (const [name, m, p, body] of steps) {
+    try {
+      const r = await fetch(base + p, { method: m, headers: H, body: body ? JSON.stringify(body) : undefined });
+      let t = "";
+      try { t = (await r.text()).slice(0, 120); } catch (e) {}
+      out.push({ name, status: r.status, t: name === "read_acl" || r.status >= 400 ? t : "" });
+    } catch (e) {
+      out.push({ name, status: 0 });
+    }
+  }
+  return json({ ok: true, out });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -388,6 +429,7 @@ export default {
     if (u.pathname === "/state-hook") return stateHook(req, env);
     if (u.pathname === "/admin/config") return adminConfig(req, env);
     if (u.pathname === "/admin/probe") return adminProbe(req, env);
+    if (u.pathname === "/admin/probe-write") return adminProbeWrite(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
