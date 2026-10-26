@@ -15,7 +15,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
     var lastError: String = ""
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS)
+        .connectTimeout(1, TimeUnit.SECONDS)
         .readTimeout(3, TimeUnit.SECONDS)
         .build()
 
