@@ -471,6 +471,37 @@ async function homeActivate(req, env) {
   return json({ ok: true, home, host: new URL(PUBLISH_URL).hostname, port: 8883, user, pass, token, esp });
 }
 
+async function adminDelHome(req, env) {
+  const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  if (!(await same(req.headers.get("x-admin-key") || "", env.PASSCODE))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "unauthorized" }, 401);
+  }
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const home = String((b && b.home) || "").trim();
+  if (!/^h[0-9a-f]{8}$/.test(home)) return json({ error: "bad_request" }, 400);
+  const raw = await env.KV.get("home:" + home);
+  if (!raw) return json({ error: "not_found" }, 404);
+  let rec;
+  try { rec = JSON.parse(raw); } catch (e) { return json({ error: "bad_record" }, 500); }
+  if (rec.user !== "ibn_" + home) return json({ error: "bad_record" }, 500);
+  const base = PUBLISH_URL.replace(/\/publish$/, "");
+  const H = { authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET) };
+  const del = async (p) => {
+    try { return (await fetch(base + p, { method: "DELETE", headers: H })).status; } catch (e) { return 0; }
+  };
+  const acl = await del("/authorization/sources/built_in_database/rules/users/" + rec.user);
+  const usr = await del("/authentication/password_based:built_in_database/users/" + rec.user);
+  if (usr !== 204 && usr !== 404) return json({ error: "broker_failed", acl, usr }, 502);
+  await env.KV.delete("home:" + home);
+  if (rec.esp && (await env.KV.get("espmap:" + rec.esp)) === home) await env.KV.delete("espmap:" + rec.esp);
+  return json({ ok: true, acl, usr });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -500,6 +531,7 @@ export default {
     if (u.pathname === "/admin/probe-write") return adminProbeWrite(req, env);
     if (u.pathname === "/admin/newkey") return adminNewKey(req, env);
     if (u.pathname === "/home/activate") return homeActivate(req, env);
+    if (u.pathname === "/admin/delhome") return adminDelHome(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
