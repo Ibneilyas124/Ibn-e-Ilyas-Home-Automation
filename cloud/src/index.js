@@ -418,6 +418,57 @@ async function adminNewKey(req, env) {
   return json({ ok: true, key });
 }
 
+function rhex(n) {
+  return Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function homeActivate(req, env) {
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const fk = "kfail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const key = String((b && b.key) || "").trim().toUpperCase();
+  const esp = String((b && b.esp) || "").trim();
+  if (!/^IBN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(key) || !/^[A-Za-z0-9_-]{4,24}$/.test(esp)) return json({ error: "bad_request" }, 400);
+  if ((await env.KV.get("akey:" + key)) !== "1") {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "invalid_key" }, 403);
+  }
+  if (esp === ESP || (await env.KV.get("espmap:" + esp))) return json({ error: "esp_taken" }, 409);
+  const base = PUBLISH_URL.replace(/\/publish$/, "");
+  const H = { authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET), "content-type": "application/json" };
+  const A = "/authentication/password_based:built_in_database/users";
+  const Z = "/authorization/sources/built_in_database/rules/users";
+  const call = async (m, p, body) => {
+    try {
+      const r = await fetch(base + p, { method: m, headers: H, body: body ? JSON.stringify(body) : undefined });
+      return r.status;
+    } catch (e) {
+      return 0;
+    }
+  };
+  const home = "h" + rhex(4);
+  const user = "ibn_" + home;
+  const pass = rhex(12);
+  const token = rhex(16);
+  if ((await call("POST", A, { user_id: user, password: pass, is_superuser: false })) !== 201) return json({ error: "broker_failed" }, 502);
+  const rules = [
+    { topic: "ibn/" + esp + "/#", action: "all", permission: "allow" },
+    { topic: "#", action: "all", permission: "deny" }
+  ];
+  if ((await call("POST", Z, [{ username: user, rules }])) !== 204) {
+    await call("DELETE", A + "/" + user, null);
+    return json({ error: "broker_failed" }, 502);
+  }
+  const cfg = { room: "Room 1", devices: [1, 2, 3, 4].map((n) => ({ ch: n, type: "switch", name: "Switch " + n })) };
+  await env.KV.put("home:" + home, JSON.stringify({ esp, user, token, cfg, t: Date.now() }));
+  await env.KV.put("espmap:" + esp, home);
+  await env.KV.put("akey:" + key, "used:" + home);
+  return json({ ok: true, home, host: new URL(PUBLISH_URL).hostname, port: 8883, user, pass, token, esp });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -446,6 +497,7 @@ export default {
     if (u.pathname === "/admin/probe") return adminProbe(req, env);
     if (u.pathname === "/admin/probe-write") return adminProbeWrite(req, env);
     if (u.pathname === "/admin/newkey") return adminNewKey(req, env);
+    if (u.pathname === "/home/activate") return homeActivate(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
