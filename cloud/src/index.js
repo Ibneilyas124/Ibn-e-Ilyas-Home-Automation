@@ -201,6 +201,61 @@ async function fulfillment(req, env) {
   return json({ requestId, error: "unsupported_intent" }, 400);
 }
 
+function b64u(buf) {
+  const b = new Uint8Array(buf);
+  let t = "";
+  for (let i = 0; i < b.length; i++) t += String.fromCharCode(b[i]);
+  return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function googleToken(env) {
+  const cached = await env.KV.get("gtoken");
+  if (cached) return cached;
+  const sa = JSON.parse(env.GOOGLE_SA_JSON);
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64u(enc.encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const claim = b64u(enc.encode(JSON.stringify({
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/homegraph",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600
+  })));
+  const pem = sa.private_key.replace(/-----[A-Z ]+-----/g, "").replace(/\s+/g, "");
+  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey("pkcs8", der, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, enc.encode(head + "." + claim));
+  const jwt = head + "." + claim + "." + b64u(sig);
+  const r = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt })
+  });
+  if (!r.ok) throw new Error("token_" + r.status);
+  const j = await r.json();
+  await env.KV.put("gtoken", j.access_token, { expirationTtl: 3000 });
+  return j.access_token;
+}
+
+async function reportState(env, channels) {
+  if (!env.GOOGLE_SA_JSON) return "no_sa";
+  try {
+    const cfg = await loadCfg(env);
+    const states = {};
+    for (const d of cfg.devices) states[`${ESP}:${d.ch}`] = { on: !!channels[d.ch - 1], online: true };
+    const tok = await googleToken(env);
+    const r = await fetch("https://homegraph.googleapis.com/v1/devices:reportStateAndNotification", {
+      method: "POST",
+      headers: { authorization: "Bearer " + tok, "content-type": "application/json" },
+      body: JSON.stringify({ requestId: hex(8), agentUserId: "ibn-owner", payload: { devices: { states } } })
+    });
+    if (r.status === 401) await env.KV.delete("gtoken");
+    return r.ok ? "ok" : "http_" + r.status;
+  } catch (e) {
+    return "err_" + String(e && e.message ? e.message : e).slice(0, 40);
+  }
+}
+
 async function stateHook(req, env) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const key = req.headers.get("x-hook-key") || "";
@@ -212,7 +267,8 @@ async function stateHook(req, env) {
   if (!p || p.id !== ESP || !Array.isArray(p.channels)) return json({ error: "bad_payload" }, 400);
   const n = Math.min(p.channels.length, 4);
   for (let i = 0; i < n; i++) await env.KV.put("st:" + (i + 1), p.channels[i] ? "1" : "0");
-  return json({ ok: true });
+  const rs = await reportState(env, p.channels);
+  return json({ ok: true, rs });
 }
 
 const TYPES = {
@@ -280,7 +336,8 @@ export default {
           OAUTH_CLIENT_ID: !!env.OAUTH_CLIENT_ID,
           OAUTH_CLIENT_SECRET: !!env.OAUTH_CLIENT_SECRET,
           ESP32_TOKEN: !!env.ESP32_TOKEN,
-          STATE_HOOK_KEY: !!env.STATE_HOOK_KEY
+          STATE_HOOK_KEY: !!env.STATE_HOOK_KEY,
+          GOOGLE_SA_JSON: !!env.GOOGLE_SA_JSON
         }
       });
     }
