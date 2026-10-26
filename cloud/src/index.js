@@ -403,6 +403,21 @@ async function adminProbeWrite(req, env) {
   return json({ ok: true, out });
 }
 
+async function adminNewKey(req, env) {
+  const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  if (!(await same(req.headers.get("x-admin-key") || "", env.PASSCODE))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "unauthorized" }, 401);
+  }
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const h = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  const key = "IBN-" + h.slice(0, 4) + "-" + h.slice(4, 8) + "-" + h.slice(8, 12);
+  await env.KV.put("akey:" + key, "1");
+  return json({ ok: true, key });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -430,6 +445,7 @@ export default {
     if (u.pathname === "/admin/config") return adminConfig(req, env);
     if (u.pathname === "/admin/probe") return adminProbe(req, env);
     if (u.pathname === "/admin/probe-write") return adminProbeWrite(req, env);
+    if (u.pathname === "/admin/newkey") return adminNewKey(req, env);
     return new Response("Not found", { status: 404 });
   }
 };
