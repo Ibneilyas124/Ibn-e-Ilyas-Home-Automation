@@ -452,7 +452,9 @@ async function homeActivate(req, env) {
   const home = "h" + rhex(4);
   const user = "ibn_" + home;
   const pass = rhex(12);
-  const token = rhex(16);
+  const tin = String((b && b.token) || "").trim();
+  if (tin && !/^[0-9A-Fa-f]{4,32}$/.test(tin)) return json({ error: "bad_request" }, 400);
+  const token = tin || rhex(16);
   if ((await call("POST", A, { user_id: user, password: pass, is_superuser: false })) !== 201) return json({ error: "broker_failed" }, 502);
   const rules = [
     { topic: "ibn/" + esp + "/#", action: "all", permission: "allow" },
