@@ -129,7 +129,7 @@ async function setCh(env, ch, on) {
       })
     });
     if (!r.ok) return false;
-    await env.KV.put("st:" + ch, on ? "1" : "0");
+    await putIfChanged(env, "st:" + ch, on ? "1" : "0");
     return true;
   } catch (e) {
     return false;
@@ -256,6 +256,11 @@ async function reportState(env, channels) {
   }
 }
 
+async function putIfChanged(env, key, val) {
+  const old = await env.KV.get(key);
+  if (old !== val) await env.KV.put(key, val);
+}
+
 async function stateHook(req, env) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const key = req.headers.get("x-hook-key") || "";
@@ -266,7 +271,7 @@ async function stateHook(req, env) {
   if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) { return json({ error: "bad_payload" }, 400); } }
   if (!p || p.id !== ESP || !Array.isArray(p.channels)) return json({ error: "bad_payload" }, 400);
   const n = Math.min(p.channels.length, 4);
-  for (let i = 0; i < n; i++) await env.KV.put("st:" + (i + 1), p.channels[i] ? "1" : "0");
+  for (let i = 0; i < n; i++) await putIfChanged(env, "st:" + (i + 1), p.channels[i] ? "1" : "0");
   const rs = await reportState(env, p.channels);
   return json({ ok: true, rs });
 }
