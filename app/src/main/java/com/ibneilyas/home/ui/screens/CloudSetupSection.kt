@@ -43,6 +43,20 @@ fun CloudSetupSection(vm: HomeViewModel) {
                     enabled = !busy && key.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) { Text("Activate remote access") }
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            msg = "Setting up. Please wait..."
+                            val r = vm.cloudAddPhone()
+                            esp = vm.cloudEsp()
+                            msg = r ?: "Remote access is on."
+                            busy = false
+                        }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                ) { Text("Home already set up (extra phone)") }
             } else {
                 Text("Remote access is set up for " + esp + ".", style = MaterialTheme.typography.bodySmall)
                 OutlinedButton(

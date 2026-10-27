@@ -100,6 +100,18 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         return r
     }
 
+    /** Extra phone of a home that already has remote access: no key needed. */
+    suspend fun cloudAddPhone(): String? {
+        val n = store.load().firstOrNull() ?: return "Add your controller first (Add ESP32 below)."
+        val before = store.remoteEsp
+        val r = CloudActivation.addPhone(store, n.ip, n.token)
+        if (r == null || store.remoteEsp != before) {
+            store.setEspId(n.id, store.remoteEsp)
+            swap()
+        }
+        return r
+    }
+
     /** Sends the saved cloud settings to the controller again. No new key is needed. */
     suspend fun cloudResend(): String? {
         val n = store.load().firstOrNull() ?: return "Add your controller first (Add ESP32 below)."

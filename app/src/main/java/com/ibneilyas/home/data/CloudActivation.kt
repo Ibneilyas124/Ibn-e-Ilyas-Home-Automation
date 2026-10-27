@@ -81,6 +81,46 @@ object CloudActivation {
         return push(store, client)
     }
 
+    private suspend fun askPhone(esp: String, token: String): Pair<Int, JSONObject?> = withContext(Dispatchers.IO) {
+        try {
+            val body = JSONObject().put("esp", esp).put("token", token).toString()
+                .toRequestBody("application/json".toMediaType())
+            val r = Request.Builder().url(BrandConfig.CLOUD_URL + "/home/addphone").post(body).build()
+            http.newCall(r).execute().use { resp ->
+                val o = try { JSONObject(resp.body?.string().orEmpty()) } catch (e: Exception) { null }
+                Pair(resp.code, o)
+            }
+        } catch (e: Exception) {
+            Pair(0, null)
+        }
+    }
+
+    /** Extra phone of a home that is already set up: no key, only the controller token. Does not change the controller's own cloud settings. */
+    suspend fun addPhone(store: NodeStore, ip: String, token: String): String? {
+        val client = clientFor(ip, token)
+        val id = controllerId(client) ?: return "Cannot reach the controller. Join the home Wi-Fi and check the IP address."
+        if (client.state() == null) return "Wrong controller token."
+        val (code, o) = askPhone(id, token.trim())
+        if (code != 200 || o == null || !o.optBoolean("ok")) {
+            return when (o?.optString("error")) {
+                "invalid" -> "This controller is not set up for remote yet, or the token is wrong."
+                "locked" -> "Too many wrong tries. Wait one hour and try again."
+                "phone_limit" -> "This home already has the maximum number of phones."
+                "bad_request" -> "The controller token was not accepted."
+                else -> if (code == 0) "Cannot reach the cloud. Check the phone's internet." else "Cloud setup failed (code " + code + "). Try again later."
+            }
+        }
+        val host = o.optString("host")
+        val user = o.optString("user")
+        val pass = o.optString("pass")
+        if (host.isBlank() || user.isBlank() || pass.isEmpty() || o.optString("esp") != id) return "The cloud answer was not complete. Try again later."
+        store.remoteHost = host
+        store.remoteUser = user
+        store.remotePass = pass
+        store.remoteEsp = id
+        return null
+    }
+
     private suspend fun push(store: NodeStore, client: HttpNodeClient): String? {
         val sent = client.setMqtt(store.remoteHost, 8883, store.remoteUser, store.remotePass)
         if (sent == null) {
