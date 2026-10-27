@@ -565,6 +565,57 @@ async function adminDelHome(req, env) {
   return json({ ok: true, acl, usr });
 }
 
+async function adminAuth(req, env) {
+  const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  if (!(await same(req.headers.get("x-admin-key") || "", env.PASSCODE))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    return json({ error: "unauthorized" }, 401);
+  }
+  return null;
+}
+
+async function adminListKeys(req, env) {
+  const bad = await adminAuth(req, env);
+  if (bad) return bad;
+  if (req.method !== "GET" && req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const l = await env.KV.list({ prefix: "akey:", limit: 50 });
+  const keys = [];
+  for (const k of l.keys) {
+    const key = k.name.slice(5);
+    const v = (await env.KV.get(k.name)) || "";
+    const hint = key.slice(0, 8) + "-****-****";
+    if (v === "1") { keys.push({ hint, status: "unused" }); continue; }
+    if (v.startsWith("used:")) {
+      const h = v.slice(5);
+      const ok = /^h[0-9a-f]{8}$/.test(h) && !!(await env.KV.get("home:" + h));
+      keys.push({ hint, status: ok ? "active" : "orphan", home: h });
+      continue;
+    }
+    keys.push({ hint, status: "unknown" });
+  }
+  return json({ ok: true, count: keys.length, more: !l.list_complete, keys });
+}
+
+async function adminRevokeKey(req, env) {
+  const bad = await adminAuth(req, env);
+  if (bad) return bad;
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const key = String((b && b.key) || "").trim().toUpperCase();
+  if (!/^IBN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(key)) return json({ error: "bad_request" }, 400);
+  const v = await env.KV.get("akey:" + key);
+  if (v === null) return json({ error: "not_found" }, 404);
+  if (v !== "1") {
+    const h = v.startsWith("used:") ? v.slice(5) : "";
+    if (!/^h[0-9a-f]{8}$/.test(h) || (await env.KV.get("home:" + h))) return json({ error: "key_in_use_use_delhome" }, 409);
+  }
+  await env.KV.delete("akey:" + key);
+  return json({ ok: true });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
@@ -591,6 +642,8 @@ export default {
     if (u.pathname === "/state-hook") return stateHook(req, env);
     if (u.pathname === "/admin/config") return adminConfig(req, env);
     if (u.pathname === "/admin/newkey") return adminNewKey(req, env);
+    if (u.pathname === "/admin/listkeys") return adminListKeys(req, env);
+    if (u.pathname === "/admin/revoke") return adminRevokeKey(req, env);
     if (u.pathname === "/home/activate") return homeActivate(req, env);
     if (u.pathname === "/admin/delhome") return adminDelHome(req, env);
     return new Response("Not found", { status: 404 });
