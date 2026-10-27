@@ -430,6 +430,7 @@ async function adminDelHome(req, env) {
   if (usr !== 204 && usr !== 404) return json({ error: "broker_failed", acl, usr }, 502);
   await env.KV.delete("home:" + home);
   if (rec.esp && (await env.KV.get("espmap:" + rec.esp)) === home) await env.KV.delete("espmap:" + rec.esp);
+  for (let i = 1; i <= 8; i++) await env.KV.delete("hst:" + home + ":" + i);
   return json({ ok: true, acl, usr });
 }
 
