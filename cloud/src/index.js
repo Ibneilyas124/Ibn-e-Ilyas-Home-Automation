@@ -34,6 +34,17 @@ function html(body, status = 200) {
   });
 }
 
+async function homeFromKey(env, raw) {
+  const k = String(raw).trim().toUpperCase();
+  if (!/^IBN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(k)) return "";
+  const v = await env.KV.get("akey:" + k);
+  if (!v || !v.startsWith("used:")) return "";
+  const h = v.slice(5);
+  if (!/^h[0-9a-f]{8}$/.test(h)) return "";
+  if (!(await env.KV.get("home:" + h))) return "";
+  return "h:" + h;
+}
+
 async function authorize(req, env, u) {
   const p = req.method === "POST" ? new URLSearchParams(await req.text()) : u.searchParams;
   const cid = p.get("client_id") || "";
@@ -48,12 +59,16 @@ async function authorize(req, env, u) {
   const key = "fail:" + (req.headers.get("cf-connecting-ip") || "x");
   const fails = parseInt((await env.KV.get(key)) || "0", 10);
   if (fails >= 5) return html("<p>Too many attempts. Try again in an hour.</p>", 429);
+  let cval = "1";
   if (!(await same(p.get("passcode") || "", env.PASSCODE))) {
+    cval = await homeFromKey(env, p.get("passcode") || "");
+  }
+  if (!cval) {
     await env.KV.put(key, String(fails + 1), { expirationTtl: 3600 });
     return form("Wrong passcode.");
   }
   const code = hex(24);
-  await env.KV.put("code:" + code, "1", { expirationTtl: 600 });
+  await env.KV.put("code:" + code, cval, { expirationTtl: 600 });
   const to = new URL(ruri);
   to.searchParams.set("code", code);
   if (state) to.searchParams.set("state", state);
