@@ -79,19 +79,21 @@ async function token(req, env) {
   const g = p.get("grant_type");
   if (g === "authorization_code") {
     const code = p.get("code") || "";
-    if (!(await env.KV.get("code:" + code))) return json({ error: "invalid_grant" }, 400);
+    const cv = await env.KV.get("code:" + code);
+    if (!cv) return json({ error: "invalid_grant" }, 400);
     await env.KV.delete("code:" + code);
     const at = hex(32);
     const rt = hex(32);
-    await env.KV.put("at:" + at, "1", { expirationTtl: 3600 });
-    await env.KV.put("rt:" + rt, "1");
+    await env.KV.put("at:" + at, cv, { expirationTtl: 3600 });
+    await env.KV.put("rt:" + rt, cv);
     return json({ token_type: "Bearer", access_token: at, refresh_token: rt, expires_in: 3600 });
   }
   if (g === "refresh_token") {
     const rt = p.get("refresh_token") || "";
-    if (!(await env.KV.get("rt:" + rt))) return json({ error: "invalid_grant" }, 400);
+    const rv = await env.KV.get("rt:" + rt);
+    if (!rv) return json({ error: "invalid_grant" }, 400);
     const at = hex(32);
-    await env.KV.put("at:" + at, "1", { expirationTtl: 3600 });
+    await env.KV.put("at:" + at, rv, { expirationTtl: 3600 });
     return json({ token_type: "Bearer", access_token: at, expires_in: 3600 });
   }
   return json({ error: "unsupported_grant_type" }, 400);
@@ -140,7 +142,9 @@ async function fulfillment(req, env) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const auth = req.headers.get("authorization") || "";
   const tok = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!tok || !(await env.KV.get("at:" + tok))) return json({ error: "unauthorized" }, 401);
+  const tv = tok ? await env.KV.get("at:" + tok) : null;
+  if (!tv) return json({ error: "unauthorized" }, 401);
+  if (tv !== "1") return json({ error: "forbidden" }, 403);
   let body;
   try { body = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
   const requestId = body.requestId;
