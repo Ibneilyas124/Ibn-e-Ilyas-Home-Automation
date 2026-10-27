@@ -86,6 +86,26 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             MqttRemote(store.remoteHost, store.remoteUser, store.remotePass, store.remoteEsp)
         else null
 
+    fun cloudEsp(): String = store.remoteEsp
+
+    /** Customer setup: the activation key makes the cloud home and sets the first controller up. */
+    suspend fun cloudActivate(key: String): String? {
+        val n = store.load().firstOrNull() ?: return "Add your controller first (Add ESP32 below)."
+        val before = store.remoteEsp
+        val r = CloudActivation.run(store, key, n.ip, n.token)
+        if (r == null || store.remoteEsp != before) {
+            store.setEspId(n.id, store.remoteEsp)
+            swap()
+        }
+        return r
+    }
+
+    /** Sends the saved cloud settings to the controller again. No new key is needed. */
+    suspend fun cloudResend(): String? {
+        val n = store.load().firstOrNull() ?: return "Add your controller first (Add ESP32 below)."
+        return CloudActivation.resend(store, n.ip, n.token)
+    }
+
     fun remoteSettings(): Triple<String, String, String> =
         Triple(store.remoteHost, store.remoteUser, store.remotePass)
 
