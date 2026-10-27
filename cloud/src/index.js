@@ -526,7 +526,7 @@ async function homeActivate(req, env) {
     return json({ error: "broker_failed" }, 502);
   }
   const cfg = { room: "Room 1", devices: [1, 2, 3, 4].map((n) => ({ ch: n, type: "switch", name: "Switch " + n })) };
-  await env.KV.put("home:" + home, JSON.stringify({ esp, user, token, cfg, t: Date.now() }));
+  await env.KV.put("home:" + home, JSON.stringify({ esp, user, token, cfg, key, t: Date.now() }));
   await env.KV.put("espmap:" + esp, home);
   await env.KV.put("akey:" + key, "used:" + home);
   return json({ ok: true, home, host: new URL(PUBLISH_URL).hostname, port: 8883, user, pass, token, esp });
@@ -559,6 +559,7 @@ async function adminDelHome(req, env) {
   const usr = await del("/authentication/password_based:built_in_database/users/" + rec.user);
   if (usr !== 204 && usr !== 404) return json({ error: "broker_failed", acl, usr }, 502);
   await env.KV.delete("home:" + home);
+  if (typeof rec.key === "string" && /^IBN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(rec.key) && (await env.KV.get("akey:" + rec.key)) === "used:" + home) await env.KV.delete("akey:" + rec.key);
   if (rec.esp && (await env.KV.get("espmap:" + rec.esp)) === home) await env.KV.delete("espmap:" + rec.esp);
   for (let i = 1; i <= 8; i++) await env.KV.delete("hst:" + home + ":" + i);
   return json({ ok: true, acl, usr });
