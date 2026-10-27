@@ -532,6 +532,59 @@ async function homeActivate(req, env) {
   return json({ ok: true, home, host: new URL(PUBLISH_URL).hostname, port: 8883, user, pass, token, esp });
 }
 
+async function homeAddPhone(req, env) {
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const fk = "pfail:" + (req.headers.get("cf-connecting-ip") || "x");
+  const fails = parseInt((await env.KV.get(fk)) || "0", 10);
+  if (fails >= 5) return json({ error: "locked" }, 429);
+  let b;
+  try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  const esp = String((b && b.esp) || "").trim();
+  const tin = String((b && b.token) || "").trim().toLowerCase();
+  if (!/^[A-Za-z0-9_-]{4,24}$/.test(esp) || !/^[0-9a-f]{4,32}$/.test(tin)) return json({ error: "bad_request" }, 400);
+  const ek = "pfe:" + esp;
+  const efails = parseInt((await env.KV.get(ek)) || "0", 10);
+  if (efails >= 10) return json({ error: "locked" }, 429);
+  const home = (await env.KV.get("espmap:" + esp)) || "";
+  const rec = /^h[0-9a-f]{8}$/.test(home) ? await homeRec(env, home) : null;
+  if (!rec || rec.esp !== esp || !(await same(tin, String(rec.token).toLowerCase()))) {
+    await env.KV.put(fk, String(fails + 1), { expirationTtl: 3600 });
+    await env.KV.put(ek, String(efails + 1), { expirationTtl: 3600 });
+    return json({ error: "invalid" }, 403);
+  }
+  const np = Number.isInteger(rec.np) && rec.np >= 0 ? rec.np : 0;
+  if (np >= 4) return json({ error: "phone_limit" }, 409);
+  const base = PUBLISH_URL.replace(/\/publish$/, "");
+  const H = { authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET), "content-type": "application/json" };
+  const A = "/authentication/password_based:built_in_database/users";
+  const Z = "/authorization/sources/built_in_database/rules/users";
+  const call = async (m, p, body) => {
+    try {
+      const r = await fetch(base + p, { method: m, headers: H, body: body ? JSON.stringify(body) : undefined });
+      return r.status;
+    } catch (e) {
+      return 0;
+    }
+  };
+  const n = np + 1;
+  const user = "ibn_" + home + "p" + n;
+  const pass = rhex(12);
+  await call("DELETE", Z + "/" + user, null);
+  await call("DELETE", A + "/" + user, null);
+  if ((await call("POST", A, { user_id: user, password: pass, is_superuser: false })) !== 201) return json({ error: "broker_failed" }, 502);
+  const rules = [
+    { topic: "ibn/" + esp + "/#", action: "all", permission: "allow" },
+    { topic: "#", action: "all", permission: "deny" }
+  ];
+  if ((await call("POST", Z, [{ username: user, rules }])) !== 204) {
+    await call("DELETE", A + "/" + user, null);
+    return json({ error: "broker_failed" }, 502);
+  }
+  rec.np = n;
+  await env.KV.put("home:" + home, JSON.stringify(rec));
+  return json({ ok: true, host: new URL(PUBLISH_URL).hostname, port: 8883, user, pass, esp, phones: n });
+}
+
 async function adminDelHome(req, env) {
   const fk = "afail:" + (req.headers.get("cf-connecting-ip") || "x");
   const fails = parseInt((await env.KV.get(fk)) || "0", 10);
@@ -558,6 +611,12 @@ async function adminDelHome(req, env) {
   const acl = await del("/authorization/sources/built_in_database/rules/users/" + rec.user);
   const usr = await del("/authentication/password_based:built_in_database/users/" + rec.user);
   if (usr !== 204 && usr !== 404) return json({ error: "broker_failed", acl, usr }, 502);
+  for (let i = 1; i <= 4; i++) {
+    const pu = rec.user + "p" + i;
+    await del("/authorization/sources/built_in_database/rules/users/" + pu);
+    const ps = await del("/authentication/password_based:built_in_database/users/" + pu);
+    if (ps !== 204 && ps !== 404) return json({ error: "broker_failed", phone: i, ps }, 502);
+  }
   await env.KV.delete("home:" + home);
   if (typeof rec.key === "string" && /^IBN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(rec.key) && (await env.KV.get("akey:" + rec.key)) === "used:" + home) await env.KV.delete("akey:" + rec.key);
   if (rec.esp && (await env.KV.get("espmap:" + rec.esp)) === home) await env.KV.delete("espmap:" + rec.esp);
@@ -645,6 +704,7 @@ export default {
     if (u.pathname === "/admin/listkeys") return adminListKeys(req, env);
     if (u.pathname === "/admin/revoke") return adminRevokeKey(req, env);
     if (u.pathname === "/home/activate") return homeActivate(req, env);
+    if (u.pathname === "/home/addphone") return homeAddPhone(req, env);
     if (u.pathname === "/admin/delhome") return adminDelHome(req, env);
     return new Response("Not found", { status: 404 });
   }
