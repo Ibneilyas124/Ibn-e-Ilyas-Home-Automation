@@ -153,15 +153,126 @@ async function setCh(env, ch, on) {
   }
 }
 
+async function homeRec(env, h) {
+  try {
+    const raw = await env.KV.get("home:" + h);
+    if (!raw) return null;
+    const r = JSON.parse(raw);
+    if (!r || typeof r.esp !== "string" || typeof r.token !== "string") return null;
+    return r;
+  } catch (e) {
+    return null;
+  }
+}
+
+function homeChOf(rec, id) {
+  const s = String(id);
+  if (!s.startsWith(rec.esp + ":")) return 0;
+  const t = s.slice(rec.esp.length + 1);
+  const n = parseInt(t, 10);
+  if (String(n) !== t) return 0;
+  const devs = rec.cfg && Array.isArray(rec.cfg.devices) ? rec.cfg.devices : [];
+  return devs.some(d => d.ch === n) ? n : 0;
+}
+
+async function setChHome(env, h, rec, ch, on) {
+  try {
+    const r = await fetch(PUBLISH_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Basic " + btoa(env.EMQX_API_ID + ":" + env.EMQX_API_SECRET)
+      },
+      body: JSON.stringify({
+        topic: `ibn/${rec.esp}/cmd/${ch}`,
+        payload: `${rec.token}:${on ? 1 : 0}`,
+        qos: 1
+      })
+    });
+    if (!r.ok) return false;
+    await putIfChanged(env, "hst:" + h + ":" + ch, on ? "1" : "0");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function homeFulfillment(env, h, body) {
+  const rec = await homeRec(env, h);
+  if (!rec) return json({ error: "forbidden" }, 403);
+  const requestId = body.requestId;
+  const input = (body.inputs || [])[0] || {};
+  const intent = input.intent || "";
+  const cfg = rec.cfg && Array.isArray(rec.cfg.devices) ? rec.cfg : { room: "Room 1", devices: [] };
+
+  if (intent === "action.devices.SYNC") {
+    return json({
+      requestId,
+      payload: {
+        agentUserId: "home-" + h,
+        devices: cfg.devices.map(d => {
+          const t = String(d.type || "");
+          const gtype = TYPES[t.toLowerCase()] || (t.startsWith("action.devices.types.") ? t : TYPES.switch);
+          return {
+            id: `${rec.esp}:${d.ch}`,
+            type: gtype,
+            traits: ["action.devices.traits.OnOff"],
+            name: { name: d.name, defaultNames: [d.name], nicknames: [d.name] },
+            willReportState: false,
+            roomHint: cfg.room
+          };
+        })
+      }
+    });
+  }
+
+  if (intent === "action.devices.QUERY") {
+    const out = {};
+    for (const d of (input.payload && input.payload.devices) || []) {
+      const ch = homeChOf(rec, d.id);
+      if (!ch) { out[d.id] = { status: "ERROR", errorCode: "deviceNotFound" }; continue; }
+      out[d.id] = { status: "SUCCESS", online: true, on: (await env.KV.get("hst:" + h + ":" + ch)) === "1" };
+    }
+    return json({ requestId, payload: { devices: out } });
+  }
+
+  if (intent === "action.devices.EXECUTE") {
+    const results = [];
+    for (const c of (input.payload && input.payload.commands) || []) {
+      const ids = (c.devices || []).map(d => d.id);
+      for (const e of c.execution || []) {
+        if (e.command !== "action.devices.commands.OnOff") {
+          results.push({ ids, status: "ERROR", errorCode: "functionNotSupported" });
+          continue;
+        }
+        const on = !!(e.params && e.params.on);
+        for (const id of ids) {
+          const ch = homeChOf(rec, id);
+          const ok = ch ? await setChHome(env, h, rec, ch, on) : false;
+          results.push(ok
+            ? { ids: [id], status: "SUCCESS", states: { on, online: true } }
+            : { ids: [id], status: "ERROR", errorCode: ch ? "hardError" : "deviceNotFound" });
+        }
+      }
+    }
+    return json({ requestId, payload: { commands: results } });
+  }
+
+  if (intent === "action.devices.DISCONNECT") return json({});
+  return json({ requestId, error: "unsupported_intent" }, 400);
+}
+
 async function fulfillment(req, env) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const auth = req.headers.get("authorization") || "";
   const tok = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const tv = tok ? await env.KV.get("at:" + tok) : null;
   if (!tv) return json({ error: "unauthorized" }, 401);
-  if (tv !== "1") return json({ error: "forbidden" }, 403);
+  const hm = /^h:(h[0-9a-f]{8})$/.exec(tv);
+  if (tv !== "1" && !hm) return json({ error: "forbidden" }, 403);
   let body;
   try { body = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
+  if (hm) return homeFulfillment(env, hm[1], body);
   const requestId = body.requestId;
   const input = (body.inputs || [])[0] || {};
   const intent = input.intent || "";
