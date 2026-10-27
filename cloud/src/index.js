@@ -269,7 +269,15 @@ async function stateHook(req, env) {
   try { b = await req.json(); } catch (e) { return json({ error: "bad_request" }, 400); }
   let p = b && b.payload !== undefined ? b.payload : b;
   if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) { return json({ error: "bad_payload" }, 400); } }
-  if (!p || p.id !== ESP || !Array.isArray(p.channels)) return json({ error: "bad_payload" }, 400);
+  if (!p || typeof p.id !== "string" || !Array.isArray(p.channels)) return json({ error: "bad_payload" }, 400);
+  if (p.id !== ESP) {
+    if (!/^[A-Za-z0-9_-]{4,24}$/.test(p.id)) return json({ error: "bad_payload" }, 400);
+    const h = await env.KV.get("espmap:" + p.id);
+    if (!h) return json({ ok: true, skip: "unknown_esp" });
+    const m = Math.min(p.channels.length, 8);
+    for (let i = 0; i < m; i++) await putIfChanged(env, "hst:" + h + ":" + (i + 1), p.channels[i] ? "1" : "0");
+    return json({ ok: true, home: true });
+  }
   const n = Math.min(p.channels.length, 4);
   for (let i = 0; i < n; i++) await putIfChanged(env, "st:" + (i + 1), p.channels[i] ? "1" : "0");
   const rs = await reportState(env, p.channels);
