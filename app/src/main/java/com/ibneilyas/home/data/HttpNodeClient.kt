@@ -80,6 +80,11 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun info(): String? = raw(req("/api/info").build())
 
+    suspend fun mqttInfo(): String? = raw(req("/api/mqtt").build())
+
+    suspend fun setMqtt(host: String, port: Int, user: String, pass: String): String? =
+        text(req("/api/mqtt").post(form("h" to host, "p" to "$port", "u" to user, "w" to pass)).build())
+
     suspend fun provision(cert: String): String? =
         text(req("/api/provision").post(form("cert" to cert)).build())
 

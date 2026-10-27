@@ -8,4 +8,6 @@ object BrandConfig {
     const val REQUIRE_GENUINE_CONTROLLER = false
     /** DEV ONLY: true skips the flash ticket check. Set to false before release. */
     const val DEV_SKIP_TICKET = true
+    /** Public address of the Ibn cloud Worker (no secret in it). */
+    const val CLOUD_URL = "https://ibn-home-cloud.ahmedsarfraz650.workers.dev"
 }
