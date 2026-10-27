@@ -11,10 +11,12 @@ import java.util.concurrent.TimeUnit
 class MqttRemote(
     host: String,
     private val user: String,
-    private val pass: String
+    private val pass: String,
+    private val esp: String = ""
 ) {
     @Volatile private var onState: ((String, List<Boolean>) -> Unit)? = null
     @Volatile private var onOnline: ((String, Boolean) -> Unit)? = null
+    private val who: String = esp.trim().ifBlank { "+" }
 
     private val client: Mqtt3AsyncClient = MqttClient.builder()
         .identifier("ibn-app-" + UUID.randomUUID())
@@ -29,14 +31,14 @@ class MqttRemote(
     private fun subscribeNow() {
         val cb = onState ?: return
         client.subscribeWith()
-            .topicFilter("ibn/+/state")
+            .topicFilter("ibn/$who/state")
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { p -> parse(p.payloadAsBytes, cb) }
             .send()
         val ol = onOnline
         if (ol != null) {
             client.subscribeWith()
-                .topicFilter("ibn/+/online")
+                .topicFilter("ibn/$who/online")
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .callback { p ->
                     val parts = p.topic.toString().split("/")

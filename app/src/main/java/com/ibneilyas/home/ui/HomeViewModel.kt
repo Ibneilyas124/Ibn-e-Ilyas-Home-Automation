@@ -83,7 +83,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun makeRemote(): MqttRemote? =
         if (store.remoteHost.isNotBlank() && store.remoteUser.isNotBlank() && store.remotePass.isNotEmpty())
-            MqttRemote(store.remoteHost, store.remoteUser, store.remotePass)
+            MqttRemote(store.remoteHost, store.remoteUser, store.remotePass, store.remoteEsp)
         else null
 
     fun remoteSettings(): Triple<String, String, String> =

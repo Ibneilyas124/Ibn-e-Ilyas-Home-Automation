@@ -41,6 +41,11 @@ class NodeStore(ctx: Context) {
         get() = p.getString("rpass", "") ?: ""
         set(v) { p.edit().putString("rpass", v).apply() }
 
+    /** Customer homes only: the one ESP32 this phone may see on the broker. Empty means owner mode (all). */
+    var remoteEsp: String
+        get() = p.getString("resp", "") ?: ""
+        set(v) { p.edit().putString("resp", v.trim()).apply() }
+
     fun setEspId(nodeId: String, eid: String) {
         save(load().map { if (it.id == nodeId) it.copy(espId = eid) else it })
     }
