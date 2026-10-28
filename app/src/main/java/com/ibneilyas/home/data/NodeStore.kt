@@ -14,7 +14,9 @@ class NodeStore(ctx: Context) {
         set(v) { p.edit().putBoolean("real", v).apply() }
 
     fun load(): List<NodeConfig> {
-        val arr = JSONArray(p.getString("list", "[]"))
+        val raw = p.getString("list", "[]") ?: "[]"
+        val arr = JSONArray(Vault.dec(raw, "[]"))
+        if (raw != "[]" && raw.isNotEmpty() && !raw.startsWith("enc:")) p.edit().putString("list", Vault.enc(raw)).apply()
         return List(arr.length()) {
             val o = arr.getJSONObject(it)
             NodeConfig(o.getString("id"), o.getString("room"), o.getString("ip"), o.getString("token"), o.optString("eid", ""))
@@ -26,7 +28,7 @@ class NodeStore(ctx: Context) {
         list.forEach {
             arr.put(JSONObject().put("id", it.id).put("room", it.room).put("ip", it.ip).put("token", it.token).put("eid", it.espId))
         }
-        p.edit().putString("list", arr.toString()).apply()
+        p.edit().putString("list", Vault.enc(arr.toString())).apply()
     }
 
     var remoteHost: String
@@ -38,8 +40,12 @@ class NodeStore(ctx: Context) {
         set(v) { p.edit().putString("ruser", v.trim()).apply() }
 
     var remotePass: String
-        get() = p.getString("rpass", "") ?: ""
-        set(v) { p.edit().putString("rpass", v).apply() }
+        get() {
+            val r = p.getString("rpass", "") ?: ""
+            if (r.isNotEmpty() && !r.startsWith("enc:")) p.edit().putString("rpass", Vault.enc(r)).apply()
+            return Vault.dec(r, "")
+        }
+        set(v) { p.edit().putString("rpass", Vault.enc(v)).apply() }
 
     /** Customer homes only: the one ESP32 this phone may see on the broker. Empty means owner mode (all). */
     var remoteEsp: String
