@@ -88,6 +88,7 @@ void mqTick() {
     }
     mqFails = 0;
     mq.subscribe((mqBase + "/cmd/#").c_str());
+    mq.subscribe((mqBase + "/tmr/#").c_str());
     mq.publish(willT.c_str(), "1", true);
     mqNeedPublish = true;
   }
