@@ -160,16 +160,19 @@ String cfgJson() {
   return String("{\"boot\":\"") + bootMode + "\",\"sw\":" + String(swMode) + ",\"swpins\":" + String(SWN) + "}";
 }
 
+String otaWhy = "";
 void otaUpload() {
   HTTPUpload& up = server.upload();
   if (up.status == UPLOAD_FILE_START) {
     if (server.header("Authorization") != "Bearer " + token) { otaState = 1; return; }
+    otaWhy = "";
     otaState = Update.begin(UPDATE_SIZE_UNKNOWN) ? 2 : 3;
+    if (otaState == 3) otaWhy = String("begin:") + Update.errorString();
   } else if (up.status == UPLOAD_FILE_WRITE) {
     if (otaState != 2) return;
-    if (Update.write(up.buf, up.currentSize) != up.currentSize) { Update.abort(); otaState = 3; }
+    if (Update.write(up.buf, up.currentSize) != up.currentSize) { otaWhy = String("write:") + Update.errorString(); Update.abort(); otaState = 3; }
   } else if (up.status == UPLOAD_FILE_END) {
-    if (otaState == 2) otaState = Update.end(true) ? 4 : 3;
+    if (otaState == 2) { otaState = Update.end(true) ? 4 : 3; if (otaState == 3) otaWhy = String("end:") + Update.errorString(); }
   } else if (up.status == UPLOAD_FILE_ABORTED) {
     if (otaState == 2) Update.abort();
     otaState = 3;
@@ -179,7 +182,7 @@ void otaUpload() {
 void otaDone() {
   if (otaState == 1) { server.send(401, "application/json", "{\"error\":\"unauthorized\"}"); otaState = 0; return; }
   bool ok = (otaState == 4);
-  server.send(ok ? 200 : 500, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");
+  server.send(ok ? 200 : 500, "application/json", ok ? String("{\"ok\":true}") : String("{\"ok\":false,\"why\":\"") + otaWhy + "\"}");
   if (ok) otaRebootAt = millis() + 1500;
   otaState = 0;
 }

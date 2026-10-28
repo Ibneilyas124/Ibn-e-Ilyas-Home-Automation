@@ -107,7 +107,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
             val body = MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("update", "app.bin", bin.toRequestBody("application/octet-stream".toMediaType()))
                 .build()
-            slow.newCall(req("/api/ota").post(body).build()).execute().use { r -> lastError = "HTTP " + r.code; r.isSuccessful }
+            slow.newCall(req("/api/ota").post(body).build()).execute().use { r -> val bd = try { r.body?.string().orEmpty() } catch (e: Exception) { "" }; val why = Regex("\"why\":\"([^\"]*)\"").find(bd)?.groupValues?.get(1).orEmpty(); lastError = "HTTP " + r.code + (if (why.isNotEmpty()) " " + why else ""); r.isSuccessful }
         } catch (e: Exception) {
             lastError = e.javaClass.simpleName + ": " + (e.message ?: ""); false
         }
