@@ -159,13 +159,34 @@ class MultiNodeRepository(
         return viaRemoteTimer(id, ch, seconds, on)
     }
 
+    private suspend fun remoteSchedules(id: String): String? {
+        val r = remote ?: return null
+        val eid = espIds[id]
+        if (eid.isNullOrEmpty()) return null
+        repeat(15) {
+            r.schedText(eid)?.let { return it }
+            kotlinx.coroutines.delay(200)
+        }
+        return null
+    }
+
+    private suspend fun viaRemoteSchedules(id: String, list: List<SchedEntry>): List<SchedEntry>? {
+        val r = remote ?: return null
+        val eid = espIds[id]
+        if (eid.isNullOrEmpty()) return null
+        val token = configs.firstOrNull { it.id == id }?.token ?: return null
+        val want = SchedCodec.encode(list)
+        val got = withContext(Dispatchers.IO) { r.schedule(eid, want, token) } ?: return null
+        return if (SchedCodec.encode(SchedCodec.parse(id, got)) == want) SchedCodec.parse(id, got) else null
+    }
+
     override suspend fun schedules(nodeId: String): List<SchedEntry>? {
-        val txt = clients[nodeId]?.schedules() ?: return null
+        val txt = clients[nodeId]?.schedules() ?: remoteSchedules(nodeId) ?: return null
         return SchedCodec.parse(nodeId, txt)
     }
 
     override suspend fun saveSchedules(nodeId: String, list: List<SchedEntry>): List<SchedEntry>? {
-        val txt = clients[nodeId]?.setSchedules(SchedCodec.encode(list)) ?: return null
+        val txt = clients[nodeId]?.setSchedules(SchedCodec.encode(list)) ?: return viaRemoteSchedules(nodeId, list)
         return SchedCodec.parse(nodeId, txt)
     }
 }

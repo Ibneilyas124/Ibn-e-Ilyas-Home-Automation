@@ -17,6 +17,8 @@ class MqttRemote(
     @Volatile private var onState: ((String, List<Boolean>) -> Unit)? = null
     @Volatile private var onOnline: ((String, Boolean) -> Unit)? = null
     private val who: String = esp.trim().ifBlank { "+" }
+    private val schedMap = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val schedSeq = java.util.concurrent.atomic.AtomicInteger(0)
 
     private val client: Mqtt3AsyncClient = MqttClient.builder()
         .identifier("ibn-app-" + UUID.randomUUID())
@@ -34,6 +36,18 @@ class MqttRemote(
             .topicFilter("ibn/$who/state")
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { p -> parse(p.payloadAsBytes, cb) }
+            .send()
+        client.subscribeWith()
+            .topicFilter("ibn/$who/sch/state")
+            .qos(MqttQos.AT_LEAST_ONCE)
+            .callback { p ->
+                val parts = p.topic.toString().split("/")
+                val txt = String(p.payloadAsBytes, Charsets.UTF_8)
+                if (parts.size == 4 && txt.startsWith("S:")) {
+                    schedMap[parts[1]] = txt.substring(2)
+                    schedSeq.incrementAndGet()
+                }
+            }
             .send()
         val ol = onOnline
         if (ol != null) {
@@ -92,6 +106,30 @@ class MqttRemote(
         true
     } catch (e: Exception) {
         false
+    }
+
+    fun schedText(id: String): String? = schedMap[id]
+
+    /** Blocking. Sends the schedule and returns the list the ESP32 publishes back, or null. */
+    fun schedule(id: String, text: String, token: String): String? {
+        return try {
+            val before = schedSeq.get()
+            client.publishWith()
+                .topic("ibn/$id/sch/set")
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .payload("$token:$text".toByteArray(Charsets.UTF_8))
+                .send()
+                .get(6, TimeUnit.SECONDS)
+            val end = System.currentTimeMillis() + 8000
+            var out: String? = null
+            while (System.currentTimeMillis() < end) {
+                if (schedSeq.get() > before) { out = schedMap[id]; break }
+                Thread.sleep(200)
+            }
+            out
+        } catch (e: Exception) {
+            null
+        }
     }
 
     fun close() {
