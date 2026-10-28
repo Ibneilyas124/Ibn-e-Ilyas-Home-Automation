@@ -104,6 +104,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         item { DiscoverySection(vm) }
         item { FlashSection() }
         item { CloudSetupSection(vm) }
+        item { AppUpdateSection() }
         if (devTaps >= 5) item { RemoteSection(vm) }
         item {
             Spacer(Modifier.height(8.dp))
