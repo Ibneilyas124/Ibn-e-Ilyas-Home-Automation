@@ -88,14 +88,21 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             else -> "Firmware is up to date"
         }
     }
+    val buzzCtx = androidx.compose.ui.platform.LocalContext.current
+    fun buzz() {
+        try {
+            val vb = androidx.core.content.ContextCompat.getSystemService(buzzCtx, android.os.Vibrator::class.java)
+            vb?.vibrate(android.os.VibrationEffect.createOneShot(1000, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (e: Exception) { }
+    }
     fun update() = scope.launch {
         val want = latest ?: return@launch
         busy = true
         status = "Downloading firmware..."
         val bin = FirmwareHub.download()
-        if (bin == null) { status = "Download failed"; busy = false; return@launch }
+        if (bin == null) { status = "Download failed"; busy = false; buzz(); return@launch }
         status = "Uploading to the ESP32. Do not switch off the power..."
-        if (!client.uploadFirmware(bin)) { status = "Upload failed (" + client.lastError + "). Nothing was changed."; busy = false; return@launch }
+        if (!client.uploadFirmware(bin)) { status = "Upload failed (" + client.lastError + "). Nothing was changed."; busy = false; buzz(); return@launch }
         status = "Restarting the ESP32..."
         var done = false
         for (k in 1..30) {
@@ -105,6 +112,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             if (installed == want) { done = true; break }
         }
         status = if (done) "Updated to $installed" else "Update sent. Reopen this screen after the ESP32 restarts."
+        buzz()
         busy = false
     }
 
