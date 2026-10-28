@@ -143,11 +143,20 @@ class MultiNodeRepository(
         if (res != null) refresh(id, res) else publish()
     }
 
+    private suspend fun viaRemoteTimer(id: String, ch: Int, sec: Int, on: Boolean): Boolean {
+        val r = remote ?: return false
+        val eid = espIds[id]
+        if (eid.isNullOrEmpty()) return false
+        val token = configs.firstOrNull { it.id == id }?.token ?: return false
+        return withContext(Dispatchers.IO) { r.timer(eid, ch, sec, on, token) }
+    }
+
     override suspend fun setTimer(applianceId: String, seconds: Int, on: Boolean): Boolean {
         val id = applianceId.substringBefore(':')
         val ch = applianceId.substringAfter(':').toIntOrNull() ?: return false
         val client = clients[id] ?: return false
-        return client.setTimer(ch, seconds, on) != null
+        if (client.setTimer(ch, seconds, on) != null) return true
+        return viaRemoteTimer(id, ch, seconds, on)
     }
 
     override suspend fun schedules(nodeId: String): List<SchedEntry>? {

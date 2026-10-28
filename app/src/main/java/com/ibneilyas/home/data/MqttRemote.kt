@@ -81,6 +81,19 @@ class MqttRemote(
         false
     }
 
+    /** Blocking: call from a background thread only. Timer over the cloud: payload token:seconds:on. */
+    fun timer(id: String, ch: Int, sec: Int, on: Boolean, token: String): Boolean = try {
+        client.publishWith()
+            .topic("ibn/$id/tmr/$ch")
+            .qos(MqttQos.AT_LEAST_ONCE)
+            .payload("$token:$sec:${if (on) 1 else 0}".toByteArray(Charsets.UTF_8))
+            .send()
+            .get(6, TimeUnit.SECONDS)
+        true
+    } catch (e: Exception) {
+        false
+    }
+
     fun close() {
         try { client.disconnect() } catch (e: Exception) { }
     }
