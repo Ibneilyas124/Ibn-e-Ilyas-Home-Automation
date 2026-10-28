@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -57,3 +59,12 @@ jobs:
         run: |
           grep -E "FAILED|AssertionError" -A3 test.log | head -60 || true
           tail -n 20 test.log
+      - name: Publish dev APK
+        if: github.ref == 'refs/heads/develop' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/*.apk IbnEIlyasHome-dev.apk
+          echo "${{ github.run_number }}" > dev-build.txt
+          gh release view dev >/dev/null 2>&1 || gh release create dev --prerelease --title "Dev build" --notes "Latest develop APK" --target develop
+          gh release upload dev IbnEIlyasHome-dev.apk dev-build.txt --clobber
