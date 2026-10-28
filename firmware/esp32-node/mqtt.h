@@ -16,6 +16,20 @@ int mqFails = 0;
 void mqCallback(char* topic, byte* payload, unsigned int len) {
   String t = topic;
   String pre = mqBase + "/cmd/";
+  String tp = mqBase + "/tmr/";
+  if (t.startsWith(tp)) {
+    int tn = t.substring(tp.length()).toInt();
+    String tm;
+    for (unsigned int i = 0; i < len && i < 80; i++) tm += (char)payload[i];
+    int c1 = tm.indexOf(':');
+    int c2 = tm.lastIndexOf(':');
+    if (c1 < 0 || c2 <= c1 || tm.substring(0, c1) != token) return;
+    if (tn < 1 || tn > N) return;
+    long tsec = tm.substring(c1 + 1, c2).toInt();
+    if (tsec < 0 || tsec > 86400) return;
+    tmrSet(tn, (uint32_t)tsec, tm.substring(c2 + 1) == "1");
+    return;
+  }
   if (!t.startsWith(pre)) return;
   int n = t.substring(pre.length()).toInt();
   String m;
