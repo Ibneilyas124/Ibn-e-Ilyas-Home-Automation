@@ -6,6 +6,7 @@
 struct Sched { uint8_t h, m, days, ch; bool on; };
 Sched scheds[MAX_SCHED];
 int schedCount = 0;
+bool schedDirty = true;
 long lastKey = -1;
 uint32_t lastCheck = 0;
 
@@ -62,7 +63,7 @@ void schedSetup() {
       return;
     }
     schedParse(server.arg("data"));
-    prefs.putString("sched", schedText());
+    prefs.putString("sched", schedText()); schedDirty = true;
     server.send(200, "text/plain", schedText());
   });
   server.on("/api/time", HTTP_GET, []() {

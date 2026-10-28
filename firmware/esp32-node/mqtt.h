@@ -30,6 +30,19 @@ void mqCallback(char* topic, byte* payload, unsigned int len) {
     tmrSet(tn, (uint32_t)tsec, tm.substring(c2 + 1) == "1");
     return;
   }
+  if (t == mqBase + "/sch/set") {
+    String sm;
+    for (unsigned int i = 0; i < len && i < 600; i++) sm += (char)payload[i];
+    int c1 = sm.indexOf(':');
+    if (c1 < 0 || sm.substring(0, c1) != token) return;
+    String data = sm.substring(c1 + 1);
+    String old = schedText();
+    schedParse(data);
+    if (data.length() > 0 && schedCount == 0) schedParse(old);
+    else prefs.putString("sched", schedText());
+    schedDirty = true;
+    return;
+  }
   if (!t.startsWith(pre)) return;
   int n = t.substring(pre.length()).toInt();
   String m;
@@ -53,6 +66,7 @@ void mqLoadCfg() {
   mq.setClient(mqPort == 8883 ? (Client&)mqSecure : (Client&)mqPlain);
   mq.setServer(mqHost.c_str(), mqPort);
   mq.setCallback(mqCallback);
+  mq.setBufferSize(768);
   mq.setSocketTimeout(4);
   mq.setKeepAlive(30);
   mqFails = 0;
@@ -89,6 +103,8 @@ void mqTick() {
     mqFails = 0;
     mq.subscribe((mqBase + "/cmd/#").c_str());
     mq.subscribe((mqBase + "/tmr/#").c_str());
+    mq.subscribe((mqBase + "/sch/set").c_str());
+    schedDirty = true;
     mq.publish(willT.c_str(), "1", true);
     mqNeedPublish = true;
   }
@@ -99,6 +115,10 @@ void mqTick() {
     }
   }
   if (mqNeedPublish && mq.connected()) mqPublishState();
+  if (schedDirty && mq.connected()) {
+    mq.publish((mqBase + "/sch/state").c_str(), ("S:" + schedText()).c_str(), true);
+    schedDirty = false;
+  }
 }
 
 void mqSetup() {
