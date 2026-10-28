@@ -2,6 +2,7 @@
 // Remote control over MQTT (cloud broker). Does nothing until a broker host is saved.
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
+#include "ca.h"
 
 WiFiClient mqPlain;
 WiFiClientSecure mqSecure;
@@ -62,7 +63,6 @@ void mqLoadCfg() {
   mqPass = prefs.getString("mqw", "");
   mqBase = "ibn/" + deviceId;
   if (mq.connected()) mq.disconnect();
-  mqSecure.setInsecure();
   mq.setClient(mqPort == 8883 ? (Client&)mqSecure : (Client&)mqPlain);
   mq.setServer(mqHost.c_str(), mqPort);
   mq.setCallback(mqCallback);
@@ -90,6 +90,10 @@ void mqTick() {
   if (WiFi.status() != WL_CONNECTED) return;
   if (!mq.connected()) {
     if (millis() < mqNextTry) return;
+    if (mqPort == 8883) {
+      if (time(nullptr) > 1700000000) mqSecure.setCACert(MQ_CA_PEM);
+      else mqSecure.setInsecure();
+    }
     String willT = mqBase + "/online";
     bool ok = mq.connect(("ibn-" + deviceId).c_str(),
                          mqUser.length() ? mqUser.c_str() : nullptr,
