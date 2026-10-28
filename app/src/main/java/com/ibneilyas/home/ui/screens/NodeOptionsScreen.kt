@@ -92,12 +92,14 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     fun buzz() {
         try {
             val vb = androidx.core.content.ContextCompat.getSystemService(buzzCtx, android.os.Vibrator::class.java)
-            vb?.vibrate(android.os.VibrationEffect.createOneShot(1000, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            val at = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
+            vb?.vibrate(android.os.VibrationEffect.createOneShot(1000, android.os.VibrationEffect.DEFAULT_AMPLITUDE), at)
         } catch (e: Exception) { }
     }
     fun update() = scope.launch {
         val want = latest ?: return@launch
         busy = true
+        try { (buzzCtx.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager).newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "ibn:ota").acquire(180000L) } catch (e: Exception) { }
         status = "Downloading firmware..."
         val bin = FirmwareHub.download()
         if (bin == null) { status = "Download failed"; busy = false; buzz(); return@launch }
