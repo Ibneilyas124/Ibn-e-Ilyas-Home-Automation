@@ -104,9 +104,10 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
                 .writeTimeout(90, TimeUnit.SECONDS)
                 .readTimeout(90, TimeUnit.SECONDS)
                 .build()
-            val body = MultipartBody.Builder().setType(MultipartBody.FORM)
-                .addFormDataPart("update", "app.bin", bin.toRequestBody("application/octet-stream".toMediaType()))
-                .build()
+            val bnd = "ibnota" + System.currentTimeMillis()
+            val head = ("--" + bnd + "\r\nContent-Disposition: form-data; name=\"update\"; filename=\"app.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n").toByteArray()
+            val tail = ("\r\n--" + bnd + "--\r\n").toByteArray()
+            val body = (head + bin + tail).toRequestBody(("multipart/form-data; boundary=" + bnd).toMediaType())
             slow.newCall(req("/api/ota").post(body).build()).execute().use { r -> val bd = try { r.body?.string().orEmpty() } catch (e: Exception) { "" }; val why = Regex("\"why\":\"([^\"]*)\"").find(bd)?.groupValues?.get(1).orEmpty(); lastError = "HTTP " + r.code + (if (why.isNotEmpty()) " " + why else ""); r.isSuccessful }
         } catch (e: Exception) {
             lastError = e.javaClass.simpleName + ": " + (e.message ?: ""); false
