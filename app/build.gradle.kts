@@ -21,7 +21,7 @@ android {
         applicationId = "com.ibneilyas.home"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.0"
     }
     buildFeatures { compose = true }
