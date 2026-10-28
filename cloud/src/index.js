@@ -657,6 +657,25 @@ async function adminListKeys(req, env) {
   return json({ ok: true, count: keys.length, more: !l.list_complete, keys });
 }
 
+async function adminPurgeKeys(req, env) {
+  const bad = await adminAuth(req, env);
+  if (bad) return bad;
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  const go = new URL(req.url).searchParams.get("go") === "1";
+  const l = await env.KV.list({ prefix: "akey:", limit: 50 });
+  let orphans = 0, deleted = 0;
+  for (const k of l.keys) {
+    const v = (await env.KV.get(k.name)) || "";
+    if (!v.startsWith("used:")) continue;
+    const h = v.slice(5);
+    if (!/^h[0-9a-f]{8}$/.test(h)) continue;
+    if (await env.KV.get("home:" + h)) continue;
+    orphans++;
+    if (go) { await env.KV.delete(k.name); deleted++; }
+  }
+  return json({ ok: true, dry: !go, orphans, deleted, more: !l.list_complete });
+}
+
 async function adminRevokeKey(req, env) {
   const bad = await adminAuth(req, env);
   if (bad) return bad;
@@ -703,6 +722,7 @@ export default {
     if (u.pathname === "/admin/newkey") return adminNewKey(req, env);
     if (u.pathname === "/admin/listkeys") return adminListKeys(req, env);
     if (u.pathname === "/admin/revoke") return adminRevokeKey(req, env);
+    if (u.pathname === "/admin/purgekeys") return adminPurgeKeys(req, env);
     if (u.pathname === "/home/activate") return homeActivate(req, env);
     if (u.pathname === "/home/addphone") return homeAddPhone(req, env);
     if (u.pathname === "/admin/delhome") return adminDelHome(req, env);
