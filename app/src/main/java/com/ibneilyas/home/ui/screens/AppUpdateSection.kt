@@ -28,6 +28,7 @@ fun AppUpdateSection() {
                     scope.launch {
                         busy = true
                         msg = "Checking..."
+                        try { com.ibneilyas.home.data.Alert.ask(ctx) } catch (e: Exception) { }
                         val latest = AppUpdate.latestBuild()
                         val cur = AppUpdate.currentBuild(ctx)
                         if (latest == null) {
@@ -42,8 +43,10 @@ fun AppUpdateSection() {
                             val f = AppUpdate.download(ctx)
                             if (f == null) {
                                 msg = "Download failed. Try again."
+                                try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Download failed. Try again.") } catch (e: Exception) { }
                             } else {
                                 msg = "Opening the installer..."
+                                try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Build " + latest + " downloaded. Opening the installer.") } catch (e: Exception) { }
                                 AppUpdate.install(ctx, f)
                             }
                         }
