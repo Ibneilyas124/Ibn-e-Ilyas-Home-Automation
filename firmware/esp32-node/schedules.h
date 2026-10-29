@@ -164,7 +164,80 @@ void sunSetup() {
   });
 }
 
+// Vacation mode: random evening on / night off for chosen channels.
+bool vacOn = false;
+uint32_t vacMask = 0;
+uint16_t vacStart = 1080, vacEnd = 1380;
+long lastVacKey = -1;
+uint32_t lastVacCheck = 0;
+
+int vacRnd(int yd, int k) {
+  uint32_t h = (uint32_t)yd * 2654435761UL + (uint32_t)k * 40503UL + 12345UL;
+  h ^= h >> 13;
+  h *= 1274126177UL;
+  h ^= h >> 16;
+  return (int)(h % 45);
+}
+
+void vacTick() {
+  if (!vacOn) return;
+  if (millis() - lastVacCheck < 1000) return;
+  lastVacCheck = millis();
+  time_t now = time(nullptr);
+  if (now < 1700000000) return;
+  struct tm tv;
+  localtime_r(&now, &tv);
+  long key = (long)tv.tm_yday * 1440 + tv.tm_hour * 60 + tv.tm_min;
+  if (key == lastVacKey) return;
+  lastVacKey = key;
+  int cur = tv.tm_hour * 60 + tv.tm_min;
+  for (int i = 0; i < N && i < 32; i++) {
+    if (!(vacMask & (1UL << i))) continue;
+    int onAt = vacStart + vacRnd(tv.tm_yday, i);
+    int offAt = vacEnd - vacRnd(tv.tm_yday, i + 8);
+    if (onAt >= offAt) continue;
+    if (cur == onAt) { srcNow = 2; apply(i, true); srcNow = 1; }
+    if (cur == offAt) { srcNow = 2; apply(i, false); srcNow = 1; }
+  }
+}
+
+void vacSetup() {
+  vacOn = prefs.getUChar("vacon", 0) == 1;
+  vacMask = prefs.getUInt("vacmask", 0);
+  vacStart = prefs.getUShort("vacst", 1080);
+  vacEnd = prefs.getUShort("vacen", 1380);
+  server.on("/api/vac", HTTP_GET, []() {
+    if (!authed()) return;
+    char b[96];
+    snprintf(b, sizeof(b), "{\"on\":%d,\"mask\":%lu,\"start\":%d,\"end\":%d}", vacOn ? 1 : 0, (unsigned long)vacMask, (int)vacStart, (int)vacEnd);
+    server.send(200, "application/json", b);
+  });
+  server.on("/api/vac", HTTP_POST, []() {
+    if (!authed()) return;
+    if (server.hasArg("start") && server.hasArg("end")) {
+      int a = server.arg("start").toInt();
+      int e = server.arg("end").toInt();
+      if (a >= 0 && e <= 1439 && a + 90 <= e) {
+        vacStart = (uint16_t)a; vacEnd = (uint16_t)e;
+        prefs.putUShort("vacst", vacStart);
+        prefs.putUShort("vacen", vacEnd);
+      }
+    }
+    if (server.hasArg("mask")) {
+      vacMask = (uint32_t)server.arg("mask").toInt();
+      prefs.putUInt("vacmask", vacMask);
+    }
+    if (server.hasArg("on")) {
+      vacOn = server.arg("on").toInt() == 1;
+      prefs.putUChar("vacon", vacOn ? 1 : 0);
+    }
+    lastVacKey = -1;
+    server.send(200, "application/json", "{\"ok\":true}");
+  });
+}
+
 void schedTick() {
+  vacTick();
   sunTick();
   if (millis() - lastCheck < 1000) return;
   lastCheck = millis();
@@ -185,6 +258,7 @@ void schedSetup() {
   configTime(TZ_SECONDS, 0, "pool.ntp.org", "time.google.com");
   schedParse(prefs.getString("sched", ""));
   sunSetup();
+  vacSetup();
   server.on("/api/schedules", HTTP_GET, []() {
     if (authed()) server.send(200, "text/plain", schedText());
   });
