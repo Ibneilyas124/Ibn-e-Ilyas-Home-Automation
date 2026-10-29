@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.10.10"
+#define FW_VERSION "0.10.11"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
@@ -43,8 +43,62 @@ String stateJson() {
   return s + "]}";
 }
 
+#include <esp_system.h>
+// ---- DIAG (fw 0.10.11) ----
+static int diagRst = -1;
+static int diagDisc = 0;
+static int diagDiscCount = 0;
+static void diagOnWifi(WiFiEvent_t ev, WiFiEventInfo_t info) {
+  if (ev == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
+    diagDisc = info.wifi_sta_disconnected.reason;
+    diagDiscCount++;
+  }
+}
+static const char* diagRstName(int r) {
+  switch (r) {
+    case 1: return "poweron";
+    case 2: return "ext";
+    case 3: return "sw";
+    case 4: return "panic";
+    case 5: return "int_wdt";
+    case 6: return "task_wdt";
+    case 7: return "wdt";
+    case 8: return "deepsleep";
+    case 9: return "brownout";
+    default: return "other";
+  }
+}
+static void diagSaveFallback() {
+  prefs.putUInt("apn", prefs.getUInt("apn", 0) + 1);
+  if (diagRst != 3) prefs.putInt("lrr", diagRst);
+  prefs.putInt("ldr", diagDisc);
+  prefs.putInt("lst", (int)WiFi.status());
+}
+static String diagJson() {
+  String s = "{\"reset\":\"" + String(diagRstName(diagRst)) + "\"";
+  s += ",\"discNow\":" + String(diagDisc);
+  s += ",\"discCount\":" + String(diagDiscCount);
+  s += ",\"upSec\":" + String(millis() / 1000);
+  s += ",\"rssi\":" + String(WiFi.RSSI());
+  s += ",\"heap\":" + String(ESP.getFreeHeap());
+  s += ",\"apFalls\":" + String(prefs.getUInt("apn", 0));
+  int lr = prefs.getInt("lrr", -1);
+  s += ",\"lastFallReset\":\"" + String(lr < 0 ? "none" : diagRstName(lr)) + "\"";
+  s += ",\"lastFallDisc\":" + String(prefs.getInt("ldr", -1));
+  s += ",\"lastFallStatus\":" + String(prefs.getInt("lst", -1));
+  return s + "}";
+}
+static void diagInit() {
+  static bool done = false;
+  if (done) return;
+  done = true;
+  diagRst = (int)esp_reset_reason();
+  WiFi.onEvent(diagOnWifi);
+}
+
 void runPortal() {
   bool saved = prefs.getString("ssid", "").length() > 0;
+  if (saved) diagSaveFallback();
   WiFi.mode(WIFI_AP);
   WiFi.softAP(("IbnEIlyas-" + deviceId.substring(6)).c_str());
   dns.start(53, "*", WiFi.softAPIP());
@@ -76,6 +130,7 @@ void runPortal() {
 }
 
 void connectWifi() {
+  diagInit();
   String ssid = prefs.getString("ssid", "");
   if (ssid.length() > 0) {
     WiFi.mode(WIFI_STA);
@@ -143,6 +198,9 @@ void setup() {
   server.on("/api/info", HTTP_GET, []() {
     server.send(200, "application/json", "{\"id\":\"" + deviceId +
       "\",\"firmware\":\"" FW_VERSION "\",\"channels\":" + String(N) + "}");
+  });
+  server.on("/api/diag", HTTP_GET, []() {
+    if (authed()) server.send(200, "application/json", diagJson());
   });
   server.on("/api/state", HTTP_GET, []() {
     if (authed()) server.send(200, "application/json", stateJson());
