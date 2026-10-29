@@ -90,6 +90,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     }
     val buzzCtx = androidx.compose.ui.platform.LocalContext.current
     fun buzz() {
+        try { com.ibneilyas.home.data.Alert.notify(buzzCtx, "Firmware update", status.toString()) } catch (e: Exception) { }
         try {
             val vb = androidx.core.content.ContextCompat.getSystemService(buzzCtx, android.os.Vibrator::class.java)
             val at = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
@@ -98,6 +99,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     }
     fun update() = scope.launch {
         val want = latest ?: return@launch
+        try { com.ibneilyas.home.data.Alert.ask(buzzCtx) } catch (e: Exception) { }
         busy = true
         try { (buzzCtx.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager).newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "ibn:ota").acquire(180000L) } catch (e: Exception) { }
         status = "Downloading firmware..."
