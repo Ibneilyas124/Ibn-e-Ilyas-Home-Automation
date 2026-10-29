@@ -34,6 +34,29 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         .combine(overrides) { d, o -> withOverrides(d, o) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, HomeData())
 
+    // Offline alert: a node seen online, then offline for 60 s, gives one notification; another when it is back.
+    private val offlineWatch = viewModelScope.launch {
+        val seen = mutableSetOf<String>()
+        val since = mutableMapOf<String, Long>()
+        val alerted = mutableSetOf<String>()
+        while (true) {
+            kotlinx.coroutines.delay(5000)
+            try {
+                val now = System.currentTimeMillis()
+                for (n in data.value.nodes) {
+                    if (n.online) {
+                        seen.add(n.id)
+                        since.remove(n.id)
+                        if (alerted.remove(n.id)) Alert.notify(getApplication<Application>(), "Back online", n.name + " is online again.")
+                    } else if (n.id in seen) {
+                        val t = since.getOrPut(n.id) { now }
+                        if (now - t >= 60000 && alerted.add(n.id)) Alert.notify(getApplication<Application>(), "Device offline", n.name + " has been offline for 1 minute.")
+                    }
+                }
+            } catch (e: Exception) { }
+        }
+    }
+
     private fun withOverrides(d: HomeData, o: Overrides): HomeData {
         val rooms = (d.rooms + o.customRooms).filter { it.id !in o.hiddenRooms }.map { r ->
             r.copy(name = o.rooms[r.id] ?: r.name, iconKey = o.roomIcons[r.id] ?: r.iconKey)
