@@ -93,5 +93,12 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Create All Lights OFF") }
         }
+        item {
+            OutlinedButton(
+                onClick = { vm.addScene("All OFF", d.appliances.map { SceneAction(it.id, false) }) },
+                enabled = d.appliances.isNotEmpty() && scenes.none { it.name == "All OFF" },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) { Text("Create All OFF") }
+        }
     }
 }
