@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.10.9"
+#define FW_VERSION "0.10.10"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
@@ -71,7 +71,7 @@ void runPortal() {
     server.handleClient();
     featuresTick();
     if (restartAt && millis() > restartAt) ESP.restart();
-    if (saved && millis() - t0 > 180000) ESP.restart();
+    if (saved && millis() - t0 > 60000 && WiFi.softAPgetStationNum() == 0) ESP.restart();
   }
 }
 
