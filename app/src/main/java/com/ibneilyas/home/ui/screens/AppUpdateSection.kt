@@ -17,17 +17,20 @@ fun AppUpdateSection() {
     val scope = rememberCoroutineScope()
     var msg by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var apk by remember { mutableStateOf<java.io.File?>(null) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("App update", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("Installed build: " + AppUpdate.currentBuild(ctx))
             if (msg.isNotEmpty()) Text(msg)
+            if (apk != null) Button(onClick = { apk?.let { AppUpdate.install(ctx, it) } }) { Text("Install") }
             Button(
                 enabled = !busy,
                 onClick = {
                     scope.launch {
                         busy = true
                         msg = "Checking..."
+                        apk = null
                         try { com.ibneilyas.home.data.Alert.ask(ctx) } catch (e: Exception) { }
                         val latest = AppUpdate.latestBuild()
                         val cur = AppUpdate.currentBuild(ctx)
@@ -45,9 +48,9 @@ fun AppUpdateSection() {
                                 msg = "Download failed. Try again."
                                 try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Download failed. Try again.") } catch (e: Exception) { }
                             } else {
-                                msg = "Opening the installer..."
-                                try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Build " + latest + " downloaded. Opening the installer.") } catch (e: Exception) { }
-                                AppUpdate.install(ctx, f)
+                                apk = f
+                                msg = "Build " + latest + " downloaded. Tap Install."
+                                try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Build " + latest + " downloaded. Open the app and tap Install.") } catch (e: Exception) { }
                             }
                         }
                         busy = false
