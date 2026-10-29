@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.10.8"
+#define FW_VERSION "0.10.9"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
@@ -80,7 +80,7 @@ void connectWifi() {
   if (ssid.length() > 0) {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), prefs.getString("pass", "").c_str());
-    for (int i = 0; i < 60 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 180 && WiFi.status() != WL_CONNECTED; i++) {
       for (int k = 0; k < 10; k++) { featuresTick(); delay(50); }
     }
     if (WiFi.status() == WL_CONNECTED) return;
