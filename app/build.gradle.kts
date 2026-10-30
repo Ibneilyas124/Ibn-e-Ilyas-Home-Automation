@@ -51,6 +51,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.hivemq:hivemq-mqtt-client:1.3.14")
     implementation("com.github.mik3y:usb-serial-for-android:3.7.3")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
 }
