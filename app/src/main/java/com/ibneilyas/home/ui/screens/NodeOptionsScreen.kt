@@ -47,6 +47,12 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var sunLat by remember { mutableStateOf("") }
     var sunLon by remember { mutableStateOf("") }
     var sunInfo by remember { mutableStateOf("") }
+    var sunList by remember { mutableStateOf(listOf<List<Int>>()) }
+    var sEv by remember { mutableStateOf(0) }
+    var sOff by remember { mutableStateOf("0") }
+    var sCh by remember { mutableStateOf("1") }
+    var sOn by remember { mutableStateOf(true) }
+    var sDays by remember { mutableStateOf(127) }
     var supported by remember { mutableStateOf(true) }
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
@@ -103,7 +109,27 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         }
     }
     LaunchedEffect(cfg.id) { load() }
-    LaunchedEffect(cfg.id) { loadVacSun() }
+    suspend fun loadSunList() {
+        val ss = client.sunSched()
+        if (ss != null) {
+            sunList = ss.split(";").mapNotNull { p ->
+                val x = p.split(",").mapNotNull { it.trim().toIntOrNull() }
+                if (x.size == 5) x else null
+            }
+        }
+    }
+    LaunchedEffect(cfg.id) { loadVacSun(); loadSunList() }
+    fun saveSunList(l: List<List<Int>>) = scope.launch {
+        val d = l.joinToString("") { it.joinToString(",") + ";" }
+        if (client.setSunSched(d) != null) { sunList = l; status = "Sun schedule saved" } else { status = "Could not save. Is the ESP32 online?" }
+    }
+    fun addSun() {
+        val o = sOff.toIntOrNull(); val c = sCh.toIntOrNull()
+        if (o == null || o < -720 || o > 720 || c == null || c < 1 || c > chCount) { status = "Offset -720 to 720, channel 1 to $chCount"; return }
+        if (sDays == 0) { status = "Pick at least one day"; return }
+        if (sunList.size >= 8) { status = "Maximum 8 entries"; return }
+        saveSunList(sunList + listOf(listOf(sEv, o, sDays, c, if (sOn) 1 else 0)))
+    }
     fun saveVac() = scope.launch {
         val a = hm(vacS); val e = hm(vacE)
         if (a < 0 || e < 0 || a + 90 > e) { status = "Use HH:MM. Start must be at least 90 minutes before end."; return@launch }
@@ -292,6 +318,40 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             }
             Button(onClick = { saveSun() }, enabled = supported) { Text("Save location") }
             if (sunInfo.isNotEmpty()) Text(sunInfo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Sunrise / sunset schedules", style = MaterialTheme.typography.titleMedium)
+            val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+            sunList.forEachIndexed { i, x ->
+                val dn = dayNames.filterIndexed { d, _ -> ((x[2] shr d) and 1) == 1 }.joinToString(" ")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        (if (x[0] == 0) "Sunrise" else "Sunset") + (if (x[1] >= 0) " +" else " ") + x[1] + " min: channel " + x[3] + " " + (if (x[4] == 1) "ON" else "OFF") + " (" + dn + ")",
+                        modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(onClick = { saveSunList(sunList.filterIndexed { j, _ -> j != i }) }, enabled = supported) { Text("Delete") }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = sEv == 0, onClick = { sEv = 0 }, label = { Text("Sunrise") }, enabled = supported)
+                FilterChip(selected = sEv == 1, onClick = { sEv = 1 }, label = { Text("Sunset") }, enabled = supported)
+                FilterChip(selected = sOn, onClick = { sOn = true }, label = { Text("ON") }, enabled = supported)
+                FilterChip(selected = !sOn, onClick = { sOn = false }, label = { Text("OFF") }, enabled = supported)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = sOff, onValueChange = { sOff = it.filter { c -> c.isDigit() || c == '-' }.take(4) }, label = { Text("Offset minutes") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+                OutlinedTextField(value = sCh, onValueChange = { sCh = it.filter { c -> c.isDigit() }.take(1) }, label = { Text("Channel") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+            }
+            for (rg in listOf(0..3, 4..6)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (d in rg) {
+                        FilterChip(selected = ((sDays shr d) and 1) == 1, onClick = { sDays = sDays xor (1 shl d) }, label = { Text(dayNames[d]) }, enabled = supported)
+                    }
+                }
+            }
+            Button(onClick = { addSun() }, enabled = supported) { Text("Add sun schedule") }
+            Text(
+                "Offset is in minutes from sunrise or sunset: minus = before, plus = after. Up to 8 entries. Uses the location above.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text("Certificate", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = certTicket, onValueChange = { certTicket = it },

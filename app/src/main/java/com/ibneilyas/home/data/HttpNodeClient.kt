@@ -83,6 +83,11 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun sun(): String? = text(req("/api/sun").build())
 
+    suspend fun sunSched(): String? = text(req("/api/sunsched").build())
+
+    suspend fun setSunSched(data: String): String? =
+        text(req("/api/sunsched").post(form("data" to data)).build())
+
     suspend fun setSun(lat: String, lon: String): String? =
         text(req("/api/sun").post(form("lat" to lat, "lon" to lon)).build())
 
