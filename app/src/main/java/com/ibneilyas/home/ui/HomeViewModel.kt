@@ -208,6 +208,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         scenes.value = n
     }
 
+    // Notification tap: devices ke online hone ka thoda intezar (10 s tak), phir Scene chalao
+    fun runSceneWhenReady(id: String) {
+        val sc = scenes.value.firstOrNull { it.id == id } ?: return
+        viewModelScope.launch {
+            var tries = 0
+            while (tries < 20) {
+                val d = data.value
+                val apps = sc.actions.mapNotNull { a -> d.appliances.firstOrNull { it.id == a.applianceId } }
+                if (apps.isNotEmpty() && apps.all { d.isOnline(it) }) break
+                kotlinx.coroutines.delay(500)
+                tries++
+            }
+            runScene(sc)
+        }
+    }
+
     fun runScene(scene: Scene) {
         if (runningScene.value != null) return
         viewModelScope.launch {

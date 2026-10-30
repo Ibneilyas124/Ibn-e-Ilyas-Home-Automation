@@ -69,6 +69,7 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
         RecentVoiceSection(vm)
         VoiceCorrectionsSection(vm)
         WidgetSection()
+        GeoSection(vm)
         Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         OutlinedButton(onClick = onActivity, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Activity history") }
         Text("Backup", style = MaterialTheme.typography.titleMedium)
