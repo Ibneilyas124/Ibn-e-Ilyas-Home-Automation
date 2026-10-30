@@ -91,10 +91,10 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
     suspend fun setChannels(n: Int): String? =
         text(req("/api/channels").post(form("n" to n.toString())).build())
 
-    suspend fun setConfig(boot: String? = null, sw: Int? = null): String? {
+    suspend fun setConfig(boot: String? = null, sw: Int? = null, maxon: String? = null): String? {
         val parts = ArrayList<Pair<String, String>>()
         if (boot != null) parts.add("boot" to boot)
-        if (sw != null) parts.add("sw" to sw.toString())
+        if (sw != null) parts.add("sw" to sw.toString()); if (maxon != null) parts.add("maxon" to maxon)
         return text(req("/api/config").post(form(*parts.toTypedArray())).build())
     }
 

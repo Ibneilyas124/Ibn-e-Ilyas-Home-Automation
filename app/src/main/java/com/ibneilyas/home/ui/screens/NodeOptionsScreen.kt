@@ -39,6 +39,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var latest by remember { mutableStateOf<String?>(null) }
     var boot by remember { mutableStateOf("last") }
     var sw by remember { mutableStateOf(0) }
+    var maxon by remember { mutableStateOf(listOf<String>()) }
     var supported by remember { mutableStateOf(true) }
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
@@ -59,6 +60,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         if (c != null) {
             boot = Regex("\"boot\":\"(\\w+)\"").find(c)?.groupValues?.get(1) ?: "last"
             sw = Regex("\"sw\":(\\d)").find(c)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            maxon = (Regex("\"maxon\":\\[([0-9,]*)\\]").find(c)?.groupValues?.get(1) ?: "").split(",").filter { it.isNotBlank() }
         }
         timers = (client.timers() ?: "").split(";").mapNotNull { p ->
             val x = p.split(",").mapNotNull { it.trim().toIntOrNull() }
@@ -73,6 +75,10 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     }
     fun saveSwitch(v: Int) = scope.launch {
         if (client.setConfig(sw = v) != null) { sw = v } else { status = "Could not save. Is the ESP32 online?" }
+    }
+    fun saveMaxon() = scope.launch {
+        val v = maxon.joinToString(",") { (it.toIntOrNull() ?: 0).coerceIn(0, 1440).toString() }
+        status = if (client.setConfig(maxon = v) != null) "Auto-off saved" else "Could not save. Is the ESP32 online?"
     }
     fun cancelTimer(ch: Int) = scope.launch {
         client.setTimer(ch, 0, false)
@@ -193,6 +199,20 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 "Relay outputs: GPIO 16, 17, 18, 19 = channels 1 to 4; GPIO 21, 22, 23, 27 = channels 5 to 8. " +
                 "Inputs: GPIO 32, 33, 25, 26 = channels 1 to 4; GPIO 4, 5, 13, 14 = channels 5 to 8, wired as a low-voltage contact to GND. " +
                     "Never connect mains wiring to the ESP32. Use an isolated sensing module fitted by an electrician.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text("Auto-off timer", style = MaterialTheme.typography.titleMedium)
+            maxon.forEachIndexed { i, v ->
+                OutlinedTextField(
+                    value = v,
+                    onValueChange = { t -> maxon = maxon.toMutableList().also { it[i] = t.filter { c -> c.isDigit() }.take(4) } },
+                    label = { Text("Channel ${i + 1}: max minutes ON (0 = off)") },
+                    singleLine = true, enabled = supported, modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Button(onClick = { saveMaxon() }, enabled = supported && maxon.isNotEmpty()) { Text("Save auto-off") }
+            Text(
+                "A channel switches OFF by itself after this many minutes (0 to 1440). Counting restarts after a power cut.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text("Certificate", style = MaterialTheme.typography.titleMedium)
