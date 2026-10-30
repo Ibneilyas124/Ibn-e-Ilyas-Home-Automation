@@ -76,6 +76,16 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
 
     suspend fun events(): String? = text(req("/api/events").build())
 
+    suspend fun vac(): String? = text(req("/api/vac").build())
+
+    suspend fun setVac(on: Boolean, mask: Int, start: Int, end: Int): String? =
+        text(req("/api/vac").post(form("on" to (if (on) "1" else "0"), "mask" to "$mask", "start" to "$start", "end" to "$end")).build())
+
+    suspend fun sun(): String? = text(req("/api/sun").build())
+
+    suspend fun setSun(lat: String, lon: String): String? =
+        text(req("/api/sun").post(form("lat" to lat, "lon" to lon)).build())
+
     suspend fun config(): String? = text(req("/api/config").build())
 
     suspend fun info(): String? = raw(req("/api/info").build())

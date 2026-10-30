@@ -40,6 +40,13 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var boot by remember { mutableStateOf("last") }
     var sw by remember { mutableStateOf(0) }
     var maxon by remember { mutableStateOf(listOf<String>()) }
+    var vacOn by remember { mutableStateOf(false) }
+    var vacMask by remember { mutableStateOf(0) }
+    var vacS by remember { mutableStateOf("18:00") }
+    var vacE by remember { mutableStateOf("23:00") }
+    var sunLat by remember { mutableStateOf("") }
+    var sunLon by remember { mutableStateOf("") }
+    var sunInfo by remember { mutableStateOf("") }
     var supported by remember { mutableStateOf(true) }
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
@@ -68,7 +75,46 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         }
         status = ""
     }
+    fun hm(t: String): Int {
+        val p = t.split(":")
+        if (p.size != 2) return -1
+        val h = p[0].trim().toIntOrNull() ?: return -1
+        val m = p[1].trim().toIntOrNull() ?: return -1
+        if (h !in 0..23 || m !in 0..59) return -1
+        return h * 60 + m
+    }
+    fun hmText(m: Int): String = if (m < 0) "not set" else "%02d:%02d".format(m / 60, m % 60)
+    suspend fun loadVacSun() {
+        val v = client.vac()
+        if (v != null) {
+            vacOn = Regex("\"on\":(\\d)").find(v)?.groupValues?.get(1) == "1"
+            vacMask = Regex("\"mask\":(\\d+)").find(v)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            val a = Regex("\"start\":(\\d+)").find(v)?.groupValues?.get(1)?.toIntOrNull() ?: 1080
+            val e = Regex("\"end\":(\\d+)").find(v)?.groupValues?.get(1)?.toIntOrNull() ?: 1380
+            vacS = hmText(a); vacE = hmText(e)
+        }
+        val u = client.sun()
+        if (u != null) {
+            sunLat = Regex("\"lat\":(-?[0-9.]+)").find(u)?.groupValues?.get(1) ?: ""
+            sunLon = Regex("\"lon\":(-?[0-9.]+)").find(u)?.groupValues?.get(1) ?: ""
+            val r = Regex("\"rise\":(-?\\d+)").find(u)?.groupValues?.get(1)?.toIntOrNull() ?: -1
+            val st = Regex("\"set\":(-?\\d+)").find(u)?.groupValues?.get(1)?.toIntOrNull() ?: -1
+            sunInfo = "Today (estimate): sunrise " + hmText(r) + ", sunset " + hmText(st)
+        }
+    }
     LaunchedEffect(cfg.id) { load() }
+    LaunchedEffect(cfg.id) { loadVacSun() }
+    fun saveVac() = scope.launch {
+        val a = hm(vacS); val e = hm(vacE)
+        if (a < 0 || e < 0 || a + 90 > e) { status = "Use HH:MM. Start must be at least 90 minutes before end."; return@launch }
+        status = if (client.setVac(vacOn, vacMask, a, e) != null) "Vacation mode saved" else "Could not save. Is the ESP32 online?"
+    }
+    fun saveSun() = scope.launch {
+        val la = sunLat.toDoubleOrNull(); val lo = sunLon.toDoubleOrNull()
+        if (la == null || lo == null || la <= -66.0 || la >= 66.0 || lo <= -180.0 || lo >= 180.0) { status = "Latitude must be between -66 and 66, longitude between -180 and 180."; return@launch }
+        status = if (client.setSun(sunLat.trim(), sunLon.trim()) != null) "Location saved" else "Could not save. Is the ESP32 online?"
+        loadVacSun()
+    }
 
     fun saveBoot(v: String) = scope.launch {
         if (client.setConfig(boot = v) != null) { boot = v } else { status = "Could not save. Is the ESP32 online?" }
@@ -215,6 +261,37 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 "A channel switches OFF by itself after this many minutes (0 to 1440). Counting restarts after a power cut.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text("Vacation mode", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Switch(checked = vacOn, onCheckedChange = { vacOn = it }, enabled = supported)
+                Text(if (vacOn) "On" else "Off")
+            }
+            for (i in 0 until chCount) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = ((vacMask shr i) and 1) == 1,
+                        onCheckedChange = { c -> vacMask = if (c) vacMask or (1 shl i) else vacMask and (1 shl i).inv() },
+                        enabled = supported
+                    )
+                    Text("Channel ${i + 1}")
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = vacS, onValueChange = { vacS = it }, label = { Text("From (HH:MM)") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+                OutlinedTextField(value = vacE, onValueChange = { vacE = it }, label = { Text("Until (HH:MM)") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+            }
+            Button(onClick = { saveVac() }, enabled = supported) { Text("Save vacation mode") }
+            Text(
+                "While on, the ticked channels switch ON and OFF at random times inside this window, so the house looks lived in.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text("Sunrise / sunset location", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = sunLat, onValueChange = { sunLat = it }, label = { Text("Latitude") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+                OutlinedTextField(value = sunLon, onValueChange = { sunLon = it }, label = { Text("Longitude") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
+            }
+            Button(onClick = { saveSun() }, enabled = supported) { Text("Save location") }
+            if (sunInfo.isNotEmpty()) Text(sunInfo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Certificate", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = certTicket, onValueChange = { certTicket = it },
