@@ -19,6 +19,8 @@ uint32_t evDirtyAt = 0;
 int unsyncedNew = 0;
 String bootMode = "last";
 uint8_t swMode = 0;
+uint16_t maxOnMin[NMAX];
+uint32_t onSince[NMAX];
 uint32_t savedMask = 0, lastMask = 0, maskSince = 0;
 bool swLast[NMAX], swStable[NMAX];
 uint32_t swChange[NMAX];
@@ -89,6 +91,7 @@ void bootRestore() {
   evLoad();
   bootMode = prefs.getString("bootmode", "last");
   swMode = prefs.getUChar("swmode", 0);
+  for (int i = 0; i < NMAX; i++) { maxOnMin[i] = prefs.getUShort((String("mo") + String(i)).c_str(), 0); onSince[i] = 0; }
   savedMask = prefs.getUInt("mask", 0);
   if (bootMode == "last") {
     srcNow = 0;
@@ -157,7 +160,10 @@ void swTick() {
 }
 
 String cfgJson() {
-  return String("{\"boot\":\"") + bootMode + "\",\"sw\":" + String(swMode) + ",\"swpins\":" + String(SWN) + "}";
+  String m = "[";
+  for (int i = 0; i < N; i++) { if (i) m += ","; m += String(maxOnMin[i]); }
+  m += "]";
+  return String("{\"boot\":\"") + bootMode + "\",\"sw\":" + String(swMode) + ",\"swpins\":" + String(SWN) + ",\"maxon\":" + m + "}";
 }
 
 String otaWhy = "";
@@ -201,6 +207,22 @@ void featuresSetup() {
       int v = server.arg("sw").toInt();
       if (v >= 0 && v <= 2) { swMode = v; prefs.putUChar("swmode", swMode); }
     }
+    if (server.hasArg("maxon")) {
+      String a = server.arg("maxon");
+      int pos = 0, ch = 0;
+      while (ch < NMAX && pos <= (int)a.length()) {
+        int e = a.indexOf(',', pos);
+        if (e < 0) e = a.length();
+        long v = a.substring(pos, e).toInt();
+        if (v < 0) v = 0;
+        if (v > 1440) v = 1440;
+        maxOnMin[ch] = (uint16_t)v;
+        prefs.putUShort((String("mo") + String(ch)).c_str(), maxOnMin[ch]);
+        onSince[ch] = 0;
+        ch++;
+        pos = e + 1;
+      }
+    }
     server.send(200, "application/json", cfgJson());
   });
   server.on("/api/timers", HTTP_GET, []() {
@@ -228,8 +250,22 @@ void featuresSetup() {
   server.on("/api/ota", HTTP_POST, otaDone, otaUpload);
 }
 
+void autoOffTick() {
+  for (int i = 0; i < N && i < NMAX; i++) {
+    if (!st[i]) { onSince[i] = 0; continue; }
+    if (onSince[i] == 0) onSince[i] = millis() | 1;
+    if (maxOnMin[i] > 0 && (uint32_t)(millis() - onSince[i]) >= (uint32_t)maxOnMin[i] * 60000UL) {
+      onSince[i] = 0;
+      srcNow = 3;
+      apply(i, false);
+      srcNow = 1;
+    }
+  }
+}
+
 void featuresTick() {
   tmrTick();
+  autoOffTick();
   swTick();
   saveMaskTick();
   evTimeFix();
