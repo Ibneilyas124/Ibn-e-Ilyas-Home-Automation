@@ -22,6 +22,7 @@ import com.ibneilyas.home.data.Alert
 import com.ibneilyas.home.data.GeoCfg
 import com.ibneilyas.home.data.HomeGeo
 import com.ibneilyas.home.ui.HomeViewModel
+import com.ibneilyas.home.GeoRunService
 
 // Settings: "Arrive home" - ghar ki jagah, Scene, radius, on/off
 @SuppressLint("MissingPermission")
@@ -31,6 +32,7 @@ fun GeoSection(vm: HomeViewModel) {
     val scenes by vm.scenes.collectAsState()
     var cfg by remember { mutableStateOf(HomeGeo.load(ctx)) }
     var msg by remember { mutableStateOf("") }
+    var auto by remember { mutableStateOf(HomeGeo.isAuto(ctx)) }
     var status by remember { mutableStateOf(HomeGeo.status(ctx)) }
     var rad by remember { mutableStateOf(cfg?.radius ?: 150f) }
     val c = cfg
@@ -85,7 +87,7 @@ fun GeoSection(vm: HomeViewModel) {
     Card(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Arrive home", fontWeight = FontWeight.Bold)
-            Text("When you reach home you get a notification. Tap it to run a scene.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("When you reach home your scene runs by itself. Turn Automatic off to get a notification instead.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Enabled", Modifier.weight(1f))
                 Switch(checked = c?.enabled == true, onCheckedChange = { on ->
@@ -97,6 +99,13 @@ fun GeoSection(vm: HomeViewModel) {
                     } else {
                         applyCfg(o.copy(enabled = on))
                     }
+                })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Automatic (no tap needed)", Modifier.weight(1f))
+                Switch(checked = auto, onCheckedChange = { v ->
+                    auto = v
+                    HomeGeo.setAuto(ctx, v)
                 })
             }
             Text(if (c == null) "Home: not set" else "Home: " + String.format("%.5f, %.5f", c.lat, c.lon))
@@ -128,6 +137,14 @@ fun GeoSection(vm: HomeViewModel) {
                     Text(s.name)
                 }
             }
+            OutlinedButton(onClick = {
+                val o = cfg
+                if (o == null || o.sceneId.isEmpty()) {
+                    msg = "Set home and choose a scene first"
+                } else {
+                    msg = if (GeoRunService.start(ctx)) "Test started, the scene runs in a few seconds" else "Could not start the service"
+                }
+            }) { Text("Test now (run arrival scene)") }
             TextButton(onClick = { status = HomeGeo.status(ctx) }) { Text("Status: $status (tap to refresh)") }
             if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
         }
