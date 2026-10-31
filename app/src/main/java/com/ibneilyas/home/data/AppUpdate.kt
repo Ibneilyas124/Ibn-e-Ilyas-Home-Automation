@@ -39,7 +39,7 @@ object AppUpdate {
     }
 
     /** Downloads the APK into the app cache. Refuses small files or files that are not a zip/APK. */
-    suspend fun download(ctx: Context): File? = withContext(Dispatchers.IO) {
+    suspend fun download(ctx: Context, onProgress: (Int) -> Unit = {}): File? = withContext(Dispatchers.IO) {
         try {
             val dir = File(ctx.cacheDir, "updates")
             dir.mkdirs()
@@ -48,7 +48,22 @@ object AppUpdate {
             val r = Request.Builder().url(BASE + "IbnEIlyasHome-dev.apk?t=" + System.currentTimeMillis()).build()
             http.newCall(r).execute().use { resp ->
                 if (!resp.isSuccessful) return@withContext null
-                resp.body!!.byteStream().use { input -> f.outputStream().use { out -> input.copyTo(out) } }
+                val total = resp.body!!.contentLength()
+                var done = 0L
+                var last = -2
+                resp.body!!.byteStream().use { input ->
+                    f.outputStream().use { out ->
+                        val buf = ByteArray(32768)
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            out.write(buf, 0, n)
+                            done += n
+                            val p = if (total > 0) (done * 100 / total).toInt() else -1
+                            if (p != last) { last = p; onProgress(p) }
+                        }
+                    }
+                }
             }
             val head = f.inputStream().use { val b = ByteArray(2); it.read(b); b }
             if (f.length() > 1_000_000 && head[0] == 0x50.toByte() && head[1] == 0x4B.toByte()) f else { f.delete(); null }

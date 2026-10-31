@@ -17,12 +17,15 @@ fun AppUpdateSection() {
     val scope = rememberCoroutineScope()
     var msg by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var pct by remember { mutableStateOf(-2) }
     var apk by remember { mutableStateOf<java.io.File?>(null) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("App update", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("Installed build: " + AppUpdate.currentBuild(ctx))
             if (msg.isNotEmpty()) Text(msg)
+            if (pct == -1) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (pct >= 0) LinearProgressIndicator(progress = { pct / 100f }, modifier = Modifier.fillMaxWidth())
             if (apk != null) Button(onClick = { apk?.let { AppUpdate.install(ctx, it) } }) { Text("Install") }
             Button(
                 enabled = !busy,
@@ -43,7 +46,12 @@ fun AppUpdateSection() {
                             AppUpdate.openInstallPermission(ctx)
                         } else {
                             msg = "Downloading build " + latest + "..."
-                            val f = AppUpdate.download(ctx)
+                            pct = -1
+                            val f = AppUpdate.download(ctx) { p ->
+                                pct = p
+                                msg = if (p >= 0) "Downloading build " + latest + ": " + p + "%" else "Downloading build " + latest + "..."
+                            }
+                            pct = -2
                             if (f == null) {
                                 msg = "Download failed. Try again."
                                 try { com.ibneilyas.home.data.Alert.notify(ctx, "App update", "Download failed. Try again.") } catch (e: Exception) { }
