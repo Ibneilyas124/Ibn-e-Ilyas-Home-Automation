@@ -19,6 +19,7 @@
             <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
         </intent>
     </queries>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -62,5 +63,6 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+    <service android:name=".GeoRunService" android:exported="false" android:foregroundServiceType="shortService" />
     </application>
 </manifest>

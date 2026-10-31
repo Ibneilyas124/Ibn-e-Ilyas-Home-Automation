@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import com.ibneilyas.home.GeoRunService
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -110,7 +111,11 @@ object HomeGeo {
         } catch (e: Exception) { }
     }
 
-    fun notifyArrived(ctx: Context) {
+    fun isAuto(ctx: Context): Boolean = sp(ctx).getBoolean("auto", true)
+    fun setAuto(ctx: Context, v: Boolean) { sp(ctx).edit().putBoolean("auto", v).apply() }
+    fun clearLast(ctx: Context) { sp(ctx).edit().remove("last").apply() }
+
+    fun notifyArrived(ctx: Context, allowAuto: Boolean = true) {
         try {
             val c = load(ctx) ?: return
             if (!c.enabled || c.sceneId.isEmpty()) return
@@ -120,6 +125,7 @@ object HomeGeo {
             val now = System.currentTimeMillis()
             if (now - p.getLong("last", 0L) < COOLDOWN_MS) return
             p.edit().putLong("last", now).apply()
+            if (allowAuto && isAuto(ctx) && GeoRunService.start(ctx)) return
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(NotificationChannel(CH, "Home arrival", NotificationManager.IMPORTANCE_HIGH))
             val open = Intent(ctx, MainActivity::class.java)
