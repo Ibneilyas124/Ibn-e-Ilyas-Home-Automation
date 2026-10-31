@@ -113,7 +113,7 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
         return text(req("/api/config").post(form(*parts.toTypedArray())).build())
     }
 
-    suspend fun uploadFirmware(bin: ByteArray): Boolean = withContext(Dispatchers.IO) {
+    suspend fun uploadFirmware(bin: ByteArray, onProgress: (Int) -> Unit = {}): Boolean = withContext(Dispatchers.IO) {
         try {
             val slow = http.newBuilder()
                 .writeTimeout(90, TimeUnit.SECONDS)
@@ -122,7 +122,25 @@ class HttpNodeClient(private val baseUrl: String, private val token: String) {
             val bnd = "ibnota" + System.currentTimeMillis()
             val head = ("--" + bnd + "\r\nContent-Disposition: form-data; name=\"update\"; filename=\"app.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n").toByteArray()
             val tail = ("\r\n--" + bnd + "--\r\n").toByteArray()
-            val body = (head + bin + tail).toRequestBody(("multipart/form-data; boundary=" + bnd).toMediaType())
+            val mt = ("multipart/form-data; boundary=" + bnd).toMediaType()
+            val total = (head.size + bin.size + tail.size).toLong()
+            val body = object : okhttp3.RequestBody() {
+                override fun contentType() = mt
+                override fun contentLength() = total
+                override fun writeTo(sink: okio.BufferedSink) {
+                    sink.write(head)
+                    var pos = 0
+                    var last = -1
+                    while (pos < bin.size) {
+                        val n = minOf(4096, bin.size - pos)
+                        sink.write(bin, pos, n)
+                        pos += n
+                        val p = (pos * 100L / bin.size).toInt()
+                        if (p != last) { last = p; onProgress(p) }
+                    }
+                    sink.write(tail)
+                }
+            }
             slow.newCall(req("/api/ota").post(body).build()).execute().use { r -> val bd = try { r.body?.string().orEmpty() } catch (e: Exception) { "" }; val why = Regex("\"why\":\"([^\"]*)\"").find(bd)?.groupValues?.get(1).orEmpty(); lastError = "HTTP " + r.code + (if (why.isNotEmpty()) " " + why else ""); r.isSuccessful }
         } catch (e: Exception) {
             lastError = e.javaClass.simpleName + ": " + (e.message ?: ""); false

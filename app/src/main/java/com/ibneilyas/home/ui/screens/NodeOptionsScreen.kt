@@ -1,5 +1,7 @@
 package com.ibneilyas.home.ui.screens
 
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -56,6 +58,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
     var supported by remember { mutableStateOf(true) }
     var timers by remember { mutableStateOf<List<Triple<Int, Boolean, Int>>>(emptyList()) }
     var status by remember { mutableStateOf("Loading...") }
+    var otaPct by remember { mutableStateOf(-2) }
     var busy by remember { mutableStateOf(false) }
     var certTicket by remember { mutableStateOf("") }
     var certMsg by remember { mutableStateOf("") }
@@ -181,10 +184,13 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         busy = true
         try { (buzzCtx.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager).newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "ibn:ota").acquire(180000L) } catch (e: Exception) { }
         status = "Downloading firmware..."
-        val bin = FirmwareHub.download()
-        if (bin == null) { status = "Download failed"; busy = false; buzz(); return@launch }
+        otaPct = -1
+        val bin = FirmwareHub.download { p -> otaPct = p; status = if (p >= 0) "Downloading firmware: " + p + "%" else "Downloading firmware..." }
+        if (bin == null) { otaPct = -2; status = "Download failed"; busy = false; buzz(); return@launch }
+        otaPct = 0
         status = "Uploading to the ESP32. Do not switch off the power..."
-        if (!client.uploadFirmware(bin)) { status = "Upload failed (" + client.lastError + "). Nothing was changed."; busy = false; buzz(); return@launch }
+        if (!client.uploadFirmware(bin, { p -> otaPct = p; status = "Uploading to the ESP32: " + p + "%. Do not switch off the power." })) { otaPct = -2; status = "Upload failed (" + client.lastError + "). Nothing was changed."; busy = false; buzz(); return@launch }
+        otaPct = -2
         status = "Restarting the ESP32..."
         var done = false
         for (k in 1..30) {
@@ -211,6 +217,8 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             }
         }
         if (status.isNotEmpty()) Text(status, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp))
+        if (otaPct == -1) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+        if (otaPct >= 0) LinearProgressIndicator(progress = { otaPct / 100f }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
         Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (!supported) {
                 Text("This ESP32 has older firmware without these options. Flash firmware 0.5.0 or newer once with USB, then they appear here.")

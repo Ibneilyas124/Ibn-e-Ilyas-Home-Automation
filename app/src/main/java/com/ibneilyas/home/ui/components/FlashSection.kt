@@ -58,6 +58,7 @@ fun FlashSection() {
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text("Flash firmware") }
         if (progress in 0..100) LinearProgressIndicator(progress = progress / 100f, modifier = Modifier.fillMaxWidth())
+        if (progress in 0..100) Text("Flashing: " + progress + "%")
         if (logText.isNotEmpty()) Text(logText, style = MaterialTheme.typography.bodySmall)
     }
 }

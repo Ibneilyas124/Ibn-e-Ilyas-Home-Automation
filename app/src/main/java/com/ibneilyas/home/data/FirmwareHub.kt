@@ -27,11 +27,26 @@ object FirmwareHub {
     }
 
     /** Downloads app.bin. Refuses anything that does not look like an ESP32 app image. */
-    suspend fun download(): ByteArray? = withContext(Dispatchers.IO) {
+    suspend fun download(onProgress: (Int) -> Unit = {}): ByteArray? = withContext(Dispatchers.IO) {
         try {
             val r = Request.Builder().url(BASE + "app.bin?t=" + System.currentTimeMillis()).build()
             http.newCall(r).execute().use { resp ->
-                val b = if (resp.isSuccessful) resp.body!!.bytes() else null
+                val b = if (resp.isSuccessful) {
+                    val total = resp.body!!.contentLength()
+                    val out = java.io.ByteArrayOutputStream()
+                    val buf = ByteArray(16384)
+                    var last = -2
+                    resp.body!!.byteStream().use { input ->
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            out.write(buf, 0, n)
+                            val p = if (total > 0) (out.size() * 100L / total).toInt() else -1
+                            if (p != last) { last = p; onProgress(p) }
+                        }
+                    }
+                    out.toByteArray()
+                } else null
                 if (b != null && b.size > 200000 && b[0] == 0xE9.toByte()) b else null
             }
         } catch (e: Exception) {
