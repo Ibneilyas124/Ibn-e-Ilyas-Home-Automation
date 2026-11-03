@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,27 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
                 color = cs.primary
             )
             Spacer(Modifier.height(8.dp))
+            if (!d.mockMode && d.nodes.isNotEmpty() && d.onlineNodes < d.nodes.size) {
+                val off = d.nodes.size - d.onlineNodes
+                Card(
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = cs.errorContainer, contentColor = cs.onErrorContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.WifiOff, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                if (off == d.nodes.size) "Controllers offline" else "$off controller(s) offline",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text("Check ESP32 power and Wi-Fi. Offline devices are skipped.", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
