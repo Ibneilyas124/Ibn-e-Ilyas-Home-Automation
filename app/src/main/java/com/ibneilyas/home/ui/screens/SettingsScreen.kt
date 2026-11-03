@@ -42,48 +42,67 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(
-            if (d.mockMode) "Mode: Mock (no hardware)" else "Mode: Real ESP32",
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text("Home subtitle", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(value = sub, onValueChange = { sub = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        Button(
-            onClick = { vm.setSubtitle(sub) },
-            enabled = sub.isNotBlank() && sub.trim() != subtitle,
-            modifier = Modifier.fillMaxWidth().height(56.dp)
-        ) { Text("Save subtitle") }
-        Text(
-            "The company name is fixed and cannot be changed.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { vm.useMock() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Mock mode") }
-        OutlinedButton(onClick = { vm.useReal() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Real ESP32 mode") }
-        OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
-        Spacer(Modifier.height(8.dp))
-        AppearanceSection(vm)
-        VoiceOptionsSection(vm)
-        VoiceRoomSection(vm)
-        RecentVoiceSection(vm)
-        VoiceCorrectionsSection(vm)
-        WidgetSection()
-        GeoSection(vm)
-        Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        OutlinedButton(onClick = onActivity, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Activity history") }
-        Text("Backup", style = MaterialTheme.typography.titleMedium)
-        OutlinedButton(onClick = { exporter.launch("home_config.json") }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Export configuration") }
-        OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Import configuration") }
-        Text(
-            "Backup does not include tokens or Wi-Fi passwords.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(16.dp))
-        AboutDeveloperSection()
-        Text("RelayX Home Automation", fontWeight = FontWeight.SemiBold)
-        Text(BrandConfig.OWNER_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SettingsCard {
+            Text("Mode", style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (d.mockMode) "Mode: Mock (no hardware)" else "Mode: Real ESP32",
+                color = MaterialTheme.colorScheme.primary
+            )
+            OutlinedButton(onClick = { vm.useMock() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Mock mode") }
+            OutlinedButton(onClick = { vm.useReal() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Real ESP32 mode") }
+            OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
+        }
+        SettingsCard {
+            Text("Home subtitle", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(value = sub, onValueChange = { sub = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            Button(
+                onClick = { vm.setSubtitle(sub) },
+                enabled = sub.isNotBlank() && sub.trim() != subtitle,
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) { Text("Save subtitle") }
+            Text(
+                "The company name is fixed and cannot be changed.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        SettingsCard { AppearanceSection(vm) }
+        SettingsCard {
+            VoiceOptionsSection(vm)
+            VoiceRoomSection(vm)
+            RecentVoiceSection(vm)
+            VoiceCorrectionsSection(vm)
+        }
+        SettingsCard { WidgetSection() }
+        SettingsCard { GeoSection(vm) }
+        SettingsCard {
+            Text("Data and backup", style = MaterialTheme.typography.titleMedium)
+            Text(vm.storageSummary(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedButton(onClick = onActivity, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Activity history") }
+            OutlinedButton(onClick = { exporter.launch("home_config.json") }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Export configuration") }
+            OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Import configuration") }
+            Text(
+                "Backup does not include tokens or Wi-Fi passwords.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
+        }
+        SettingsCard {
+            AboutDeveloperSection()
+            Text("RelayX Home Automation", fontWeight = FontWeight.SemiBold)
+            Text(BrandConfig.OWNER_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }
