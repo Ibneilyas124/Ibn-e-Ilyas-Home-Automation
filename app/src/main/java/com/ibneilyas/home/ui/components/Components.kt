@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,13 +55,23 @@ fun NodeStatus(online: Boolean?) {
 }
 
 @Composable
-fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
-    val cs = MaterialTheme.colorScheme
+fun StatTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    container: Color = MaterialTheme.colorScheme.surface,
+    content: Color = MaterialTheme.colorScheme.onSurface,
+    icon: ImageVector? = null
+) {
     Column(
-        modifier.clip(RoundedCornerShape(20.dp)).background(cs.surface).padding(16.dp)
+        modifier.clip(RoundedCornerShape(24.dp)).background(container).padding(16.dp)
     ) {
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(6.dp))
+        }
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = content)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.75f))
     }
 }
 
