@@ -83,7 +83,7 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
         if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(16.dp))
         AboutDeveloperSection()
-        Text(BrandConfig.COMPANY_NAME, fontWeight = FontWeight.SemiBold)
+        Text("RelayX Home Automation", fontWeight = FontWeight.SemiBold)
         Text(BrandConfig.OWNER_NAME, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

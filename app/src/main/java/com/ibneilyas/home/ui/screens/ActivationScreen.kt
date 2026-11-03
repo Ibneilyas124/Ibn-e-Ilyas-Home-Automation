@@ -39,7 +39,7 @@ fun ActivationScreen(onActivated: () -> Unit, onHouseholdNode: (String, String) 
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Spacer(Modifier.height(24.dp))
-        Text(BrandConfig.COMPANY_NAME, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text("RelayX", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text("Activation required", color = MaterialTheme.colorScheme.primary)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = mode == 1, onClick = { mode = 1; msg = "" }, label = { Text("Household key") })

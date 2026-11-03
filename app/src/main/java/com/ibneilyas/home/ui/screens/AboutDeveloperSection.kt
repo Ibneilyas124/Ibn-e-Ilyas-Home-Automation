@@ -25,7 +25,7 @@ fun DeveloperInfoDialog(onDismiss: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Sarfraz Qureshi", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(BrandConfig.COMPANY_NAME, color = MaterialTheme.colorScheme.primary)
+                Text("Developed By Ibn E Ilyas Technologies", color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(8.dp))
                 Text("\uD83D\uDCCD Naushehro Feroz, Sindh, Pakistan")
                 TextButton(onClick = { go("mailto:ahmedsarfraz650@gmail.com") }) { Text("\uD83D\uDCE7 ahmedsarfraz650@gmail.com") }

@@ -23,7 +23,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Ibn e Ilyas Home"
+        android:label="RelayX"
         android:theme="@style/Theme.IbnEIlyas"
         android:usesCleartextTraffic="true">
         <provider

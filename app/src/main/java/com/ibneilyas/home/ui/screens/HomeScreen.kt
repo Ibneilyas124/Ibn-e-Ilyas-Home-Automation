@@ -19,7 +19,7 @@ import com.ibneilyas.home.ui.components.StatTile
 @Composable
 fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val d by vm.data.collectAsState()
-    val subtitle by vm.subtitle.collectAsState()
+    val subtitle = "Home Automation"
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 96.dp),
@@ -27,7 +27,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     ) {
         item {
             Text(
-                BrandConfig.COMPANY_NAME,
+                "RelayX",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
