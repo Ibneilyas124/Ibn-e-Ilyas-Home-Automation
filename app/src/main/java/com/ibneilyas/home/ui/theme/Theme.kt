@@ -6,6 +6,11 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
+import android.app.Activity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
@@ -74,5 +79,18 @@ fun HomeTheme(dark: Boolean = true, accentKey: String = "blue", content: @Compos
         outline = Color(0xFF8A949E),
         outlineVariant = Color(0xFFD0D6DC)
     )
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val w = (view.context as? Activity)?.window
+            if (w != null) {
+                w.statusBarColor = scheme.background.toArgb()
+                w.navigationBarColor = scheme.background.toArgb()
+                val c = WindowCompat.getInsetsController(w, view)
+                c.isAppearanceLightStatusBars = !dark
+                c.isAppearanceLightNavigationBars = !dark
+            }
+        }
+    }
     MaterialTheme(colorScheme = scheme, shapes = HomeShapes, content = content)
 }
