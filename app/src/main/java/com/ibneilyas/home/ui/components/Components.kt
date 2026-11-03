@@ -92,10 +92,10 @@ fun RoomCard(
     ) {
         Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(cs.surfaceVariant),
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(cs.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(roomIcon(room.iconKey), contentDescription = null, tint = cs.primary)
+                Icon(roomIcon(room.iconKey), contentDescription = null, tint = cs.onPrimaryContainer)
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
@@ -108,6 +108,19 @@ fun RoomCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 NodeStatus(online)
+            }
+            if (activeCount > 0) {
+                Text(
+                    "$activeCount ON",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = cs.onPrimary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(cs.primary)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Spacer(Modifier.width(8.dp))
             }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = cs.onSurfaceVariant)
         }
@@ -152,11 +165,16 @@ fun ApplianceTile(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                if (!online) Icons.Filled.WifiOff else applianceIcon(appliance.type),
-                contentDescription = null,
-                modifier = Modifier.size(32.dp)
-            )
+            Box(
+                Modifier.size(48.dp).clip(RoundedCornerShape(50)).background(content.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    if (!online) Icons.Filled.WifiOff else applianceIcon(appliance.type),
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(appliance.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

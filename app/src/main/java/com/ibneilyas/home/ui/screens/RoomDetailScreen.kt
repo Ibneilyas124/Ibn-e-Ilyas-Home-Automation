@@ -92,26 +92,34 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit 
             }
         }
         item {
-            Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (d.devicesIn(roomId).isEmpty()) {
-                    Text("No devices in this room yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val total = d.devicesIn(roomId).size
+                val onCount = d.activeIn(roomId)
+                Text(
+                    if (total == 0) "No devices in this room yet." else "$onCount of $total ON",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FilledTonalButton(
+                        onClick = { adding = true },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) { Text("+ Add", maxLines = 1) }
+                    OutlinedButton(
+                        onClick = { timing = true },
+                        enabled = total > 0,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) { Text("Timer", maxLines = 1) }
+                    OutlinedButton(
+                        onClick = onSchedules,
+                        enabled = total > 0,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) { Text("Schedules", maxLines = 1) }
                 }
-                Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("+ Add device") }
             }
-        }
-        item {
-            OutlinedButton(
-                onClick = { timing = true },
-                enabled = d.devicesIn(roomId).isNotEmpty(),
-                modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(48.dp)
-            ) { Text("Set timer") }
-        }
-        item {
-            OutlinedButton(
-                onClick = onSchedules,
-                enabled = d.devicesIn(roomId).isNotEmpty(),
-                modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(48.dp)
-            ) { Text("Schedules") }
         }
         items(d.devicesIn(roomId), key = { it.id }) { a ->
             Box(Modifier.padding(start = 12.dp)) {
