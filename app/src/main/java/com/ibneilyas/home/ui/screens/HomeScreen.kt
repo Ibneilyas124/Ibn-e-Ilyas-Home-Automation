@@ -12,6 +12,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.domain.Scene
@@ -27,6 +29,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val running by vm.runningScene.collectAsState()
     val msg by vm.sceneMessage.collectAsState()
     val cs = MaterialTheme.colorScheme
+    val haptic = LocalHapticFeedback.current
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 96.dp),
@@ -107,7 +110,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(scenes, key = { it.id }) { s ->
                                 FilledTonalButton(
-                                    onClick = { vm.runScene(s) },
+                                    onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.runScene(s) },
                                     enabled = running == null
                                 ) { Text(if (running == s.id) "Running..." else s.name) }
                             }
@@ -116,6 +119,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
                     msg?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = cs.primary) }
                     Button(
                         onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             vm.runScene(Scene("all-off", "All OFF", d.appliances.map { SceneAction(it.id, false) }))
                         },
                         enabled = d.appliances.isNotEmpty() && running == null,

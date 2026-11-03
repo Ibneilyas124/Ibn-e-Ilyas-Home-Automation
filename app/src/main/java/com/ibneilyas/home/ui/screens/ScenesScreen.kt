@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.domain.ApplianceType
@@ -25,6 +27,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
     val scenes by vm.scenes.collectAsState()
     val running by vm.runningScene.collectAsState()
     val msg by vm.sceneMessage.collectAsState()
+    val haptic = LocalHapticFeedback.current
     var adding by remember { mutableStateOf(false) }
     if (adding) {
         SceneEditDialog(d.appliances, d.rooms, { n, a -> vm.addScene(n, a); adding = false }, { adding = false })
@@ -47,7 +50,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
         items(scenes, key = { it.id }) { s ->
             val busy = running == s.id
             Card(
-                onClick = { vm.runScene(s) },
+                onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.runScene(s) },
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()

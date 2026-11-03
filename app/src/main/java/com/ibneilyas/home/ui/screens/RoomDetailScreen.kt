@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.domain.Appliance
@@ -20,6 +22,7 @@ import com.ibneilyas.home.ui.components.*
 @Composable
 fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit = {}, onBack: () -> Unit) {
     val d by vm.data.collectAsState()
+    val haptic = LocalHapticFeedback.current
     var edit by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
@@ -124,7 +127,7 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit 
         items(d.devicesIn(roomId), key = { it.id }) { a ->
             Box(Modifier.padding(start = 12.dp)) {
                 ApplianceTile(a, d.stateOf(a), d.isOnline(a)) {
-                    if (edit) { editing = a } else { vm.toggle(a.id) }
+                    if (edit) { editing = a } else { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.toggle(a.id) }
                 }
             }
         }
