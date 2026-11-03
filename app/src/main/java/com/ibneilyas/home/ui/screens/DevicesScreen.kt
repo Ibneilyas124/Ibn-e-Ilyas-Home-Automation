@@ -1,5 +1,11 @@
 package com.ibneilyas.home.ui.screens
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,10 +65,19 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         items(nodes, key = { it.id }) { n ->
             val online = d.nodes.firstOrNull { it.id == n.id }?.online
             Card(
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val cs = MaterialTheme.colorScheme
+                    val boxBg = when (online) { true -> cs.primaryContainer; false -> cs.errorContainer; null -> cs.surfaceVariant }
+                    val boxFg = when (online) { true -> cs.onPrimaryContainer; false -> cs.onErrorContainer; null -> cs.onSurfaceVariant }
+                    Box(
+                        Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(boxBg),
+                        contentAlignment = Alignment.Center
+                    ) { Icon(Icons.Filled.Memory, contentDescription = null, tint = boxFg) }
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(n.room, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text(n.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -79,6 +94,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                                 else -> {}
                             }
                         }
+                        Row(Modifier.horizontalScroll(rememberScrollState())) {
                         if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
                         if (!d.mockMode) TextButton(onClick = { onSchedules("opt:" + n.id) }) { Text("Options") }
                         TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }
@@ -88,6 +104,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                                 .putExtra(android.content.Intent.EXTRA_TEXT, "Ibn e Ilyas Home setup code:\n" + encodeSetup(n.room, n.ip, n.token))
                             ctx.startActivity(android.content.Intent.createChooser(i, "Share setup code").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                         }) { Text("Share") }
+                        }
                     }
                     IconButton(onClick = { vm.removeNode(n.id) }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Remove")
