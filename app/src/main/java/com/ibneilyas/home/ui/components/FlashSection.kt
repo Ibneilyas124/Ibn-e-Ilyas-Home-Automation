@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.data.EspFlasher
@@ -14,9 +15,15 @@ import kotlinx.coroutines.launch
 fun FlashSection() {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
+    // Flash/detect ke dauran screen on rakho (phone ki timeout kuch bhi ho); khatam hote hi purani setting wapas.
+    val view = LocalView.current
+    var busy by remember { mutableStateOf(false) }
+    DisposableEffect(busy) {
+        view.keepScreenOn = busy
+        onDispose { view.keepScreenOn = false }
+    }
     var ticket by remember { mutableStateOf("") }
     var logText by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(-1) }
     val fw = remember {
         try { ctx.assets.open("firmware-version.txt").bufferedReader().use { it.readText().trim() } } catch (e: Exception) { "?" }
