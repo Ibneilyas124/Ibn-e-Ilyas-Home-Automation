@@ -36,16 +36,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text(
-                "RelayX",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                "Home Automation",
-                style = MaterialTheme.typography.bodyLarge,
-                color = cs.primary
-            )
+            RelayXLogo()
             Spacer(Modifier.height(8.dp))
             if (!d.mockMode && d.nodes.isNotEmpty() && d.onlineNodes < d.nodes.size) {
                 val off = d.nodes.size - d.onlineNodes
