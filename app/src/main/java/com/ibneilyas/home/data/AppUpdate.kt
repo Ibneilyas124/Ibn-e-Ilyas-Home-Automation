@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 /** Checks the public "dev" release on GitHub, downloads the APK and opens the Android installer. */
 object AppUpdate {
-    private const val BASE = "https://github.com/Ibneilyas124/Ibn-e-Ilyas-Home-Automation/releases/download/dev/"
+    private const val BASE = "https://github.com/Ibneilyas124/RelayX/releases/download/dev/"
     private val http = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)

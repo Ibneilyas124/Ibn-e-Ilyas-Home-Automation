@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 /** Firmware files published by GitHub Pages (built from the main branch by the Build Firmware workflow). */
 object FirmwareHub {
-    private const val BASE = "https://ibneilyas124.github.io/Ibn-e-Ilyas-Home-Automation/"
+    private const val BASE = "https://ibneilyas124.github.io/RelayX/"
     private val http = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
         .readTimeout(40, TimeUnit.SECONDS)
