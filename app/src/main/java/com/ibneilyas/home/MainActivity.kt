@@ -31,6 +31,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleGeo(intent)
+        try {
+            val g = com.ibneilyas.home.data.HomeGeo.load(this)
+            if (g != null && g.enabled) {
+                com.ibneilyas.home.data.HomeGeo.glog(this, "app open: re-register geofence")
+                com.ibneilyas.home.data.HomeGeo.register(this)
+            }
+        } catch (e: Exception) { }
         setContent {
             val vm: HomeViewModel = viewModel()
             val dark by vm.dark.collectAsState()

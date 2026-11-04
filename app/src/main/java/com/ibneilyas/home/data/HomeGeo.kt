@@ -34,6 +34,18 @@ object HomeGeo {
 
     private fun sp(ctx: Context) = ctx.getSharedPreferences("geo", Context.MODE_PRIVATE)
 
+    // Chhota log (aakhri 12 lines): geofence ke saath asal mein kya hua
+    fun glog(ctx: Context, text: String) {
+        try {
+            val t = java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+            val old = sp(ctx).getString("glog", "") ?: ""
+            val lines = (old.split("\n").filter { it.isNotEmpty() } + "$t $text").takeLast(12)
+            sp(ctx).edit().putString("glog", lines.joinToString("\n")).apply()
+        } catch (e: Exception) { }
+    }
+
+    fun logText(ctx: Context): String = sp(ctx).getString("glog", "") ?: ""
+
     fun load(ctx: Context): GeoCfg? {
         val p = sp(ctx)
         val lat = p.getString("lat", null)?.toDoubleOrNull() ?: return null
@@ -64,7 +76,7 @@ object HomeGeo {
         val err = p.getString("regerr", null)
         if (err != null) return "Error: $err"
         val at = p.getLong("regat", 0L)
-        return if (at > 0L) "Registered" else "Not registered"
+        return if (at > 0L) "Registered " + java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.US).format(java.util.Date(at)) else "Not registered"
     }
 
     private fun pending(ctx: Context): PendingIntent {
@@ -93,8 +105,10 @@ object HomeGeo {
             LocationServices.getGeofencingClient(ctx).addGeofences(req, pending(ctx))
                 .addOnSuccessListener {
                     sp(ctx).edit().putLong("regat", System.currentTimeMillis()).remove("regerr").apply()
+                    glog(ctx, "register OK")
                 }
                 .addOnFailureListener { e ->
+                    glog(ctx, "register ERR " + (e.message ?: "unknown"))
                     sp(ctx).edit().putString("regerr", e.message ?: "unknown").apply()
                 }
             true
@@ -118,14 +132,14 @@ object HomeGeo {
     fun notifyArrived(ctx: Context, allowAuto: Boolean = true) {
         try {
             val c = load(ctx) ?: return
-            if (!c.enabled || c.sceneId.isEmpty()) return
+            if (!c.enabled || c.sceneId.isEmpty()) { glog(ctx, "notify: skipped, disabled or no scene"); return }
             if (Build.VERSION.SDK_INT >= 33 &&
-                ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+                ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) { glog(ctx, "notify: skipped, no notification permission"); return }
             val p = sp(ctx)
             val now = System.currentTimeMillis()
-            if (now - p.getLong("last", 0L) < COOLDOWN_MS) return
+            if (now - p.getLong("last", 0L) < COOLDOWN_MS) { glog(ctx, "notify: skipped, 30 min cooldown"); return }
             p.edit().putLong("last", now).apply()
-            if (allowAuto && isAuto(ctx) && GeoRunService.start(ctx)) return
+            if (allowAuto && isAuto(ctx) && GeoRunService.start(ctx)) { glog(ctx, "notify: service started"); return }
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(NotificationChannel(CH, "Home arrival", NotificationManager.IMPORTANCE_HIGH))
             val open = Intent(ctx, MainActivity::class.java)
@@ -140,6 +154,7 @@ object HomeGeo {
                 .setAutoCancel(true)
                 .build()
             nm.notify(7001, n)
+            glog(ctx, "notify: fallback notification posted")
         } catch (e: Exception) { }
     }
 }

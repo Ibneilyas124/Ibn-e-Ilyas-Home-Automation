@@ -9,17 +9,21 @@ import com.ibneilyas.home.data.HomeGeo
 
 class GeoReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        val ev = GeofencingEvent.fromIntent(intent) ?: return
-        if (ev.hasError()) return
+        val ev = GeofencingEvent.fromIntent(intent)
+        if (ev == null) { HomeGeo.glog(ctx, "receiver: no event in intent"); return }
+        if (ev.hasError()) { HomeGeo.glog(ctx, "receiver: error code " + ev.errorCode); return }
+        HomeGeo.glog(ctx, "receiver: transition " + ev.geofenceTransition + " (1=enter)")
         if (ev.geofenceTransition != Geofence.GEOFENCE_TRANSITION_ENTER) return
         HomeGeo.notifyArrived(ctx)
     }
 }
 
-// Phone restart par geofence dobara lagti hai
+// Phone restart ya app update par geofence dobara lagti hai
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val a = intent.action
+        if (a != Intent.ACTION_BOOT_COMPLETED && a != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        HomeGeo.glog(ctx, "receiver: re-register after " + (if (a == Intent.ACTION_MY_PACKAGE_REPLACED) "app update" else "boot"))
         HomeGeo.register(ctx)
     }
 }

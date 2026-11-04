@@ -146,6 +146,8 @@ fun GeoSection(vm: HomeViewModel) {
                 }
             }) { Text("Test now (run arrival scene)") }
             TextButton(onClick = { status = HomeGeo.status(ctx) }) { Text("Status: $status (tap to refresh)") }
+            val lg = HomeGeo.logText(ctx)
+            Text(if (lg.isEmpty()) "Geofence log: empty" else "Geofence log:\n" + lg, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
         }
     }

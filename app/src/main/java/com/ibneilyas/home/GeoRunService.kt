@@ -38,6 +38,7 @@ class GeoRunService : Service() {
         try {
             startFg()
         } catch (e: Exception) {
+            HomeGeo.glog(this, "service: startForeground failed " + e.message)
             HomeGeo.clearLast(this)
             HomeGeo.notifyArrived(this, false)
             stopSelf()
@@ -46,6 +47,7 @@ class GeoRunService : Service() {
         scope.launch {
             var ok = false
             try { ok = withTimeout(45000L) { runScene() } } catch (e: Exception) { ok = false }
+            HomeGeo.glog(this@GeoRunService, "service: scene " + (if (ok) "ran" else "failed or no device online"))
             if (!ok) {
                 HomeGeo.clearLast(this@GeoRunService)
                 HomeGeo.notifyArrived(this@GeoRunService, false)
