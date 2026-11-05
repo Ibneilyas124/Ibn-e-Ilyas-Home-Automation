@@ -78,6 +78,6 @@ fun TimerDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = TmGreen, contentColor = Color.White)
             ) { Text("Start") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        dismissButton = { TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = TmBlue)) { Text("Close") } }
     )
 }
