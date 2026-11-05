@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.graphics.Color
 import com.ibneilyas.home.ui.HomeViewModel
 import com.ibneilyas.home.ui.theme.accentChoices
 
@@ -17,10 +20,10 @@ fun AppearanceSection(vm: HomeViewModel) {
     val dark by vm.dark.collectAsState()
     val accent by vm.accent.collectAsState()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Appearance", style = MaterialTheme.typography.titleMedium)
+        CardHeader("Appearance", SViolet, Icons.Default.Edit)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (dark) "Dark mode" else "Light mode", modifier = Modifier.weight(1f))
-            Switch(checked = dark, onCheckedChange = { vm.setDark(it) })
+            Switch(checked = dark, onCheckedChange = { vm.setDark(it) }, colors = SwitchDefaults.colors(checkedTrackColor = SGreen, checkedThumbColor = Color.White, checkedBorderColor = SGreen))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             accentChoices.forEach { (k, _) ->
