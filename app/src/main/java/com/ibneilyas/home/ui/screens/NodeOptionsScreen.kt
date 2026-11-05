@@ -13,6 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.ibneilyas.home.data.FirmwareHub
 import com.ibneilyas.home.data.HttpNodeClient
 import com.ibneilyas.home.ui.HomeViewModel
@@ -206,7 +216,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-            .padding(start = 12.dp, end = 24.dp, top = 12.dp, bottom = 96.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -216,27 +226,27 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 Text(cfg.room + "  \u2022  " + cfg.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        if (status.isNotEmpty()) Text(status, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp))
+        if (status.isNotEmpty()) Text(status, color = SGreen, modifier = Modifier.padding(start = 12.dp))
         if (otaPct == -1) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
         if (otaPct >= 0) LinearProgressIndicator(progress = { otaPct / 100f }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
-        Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (!supported) {
-                Text("This ESP32 has older firmware without these options. Flash firmware 0.5.0 or newer once with USB, then they appear here.")
-            }
-            Text("Firmware", style = MaterialTheme.typography.titleMedium)
+        if (!supported) {
+            Text("This ESP32 has older firmware without these options. Flash firmware 0.5.0 or newer once with USB, then they appear here.", modifier = Modifier.padding(horizontal = 12.dp))
+        }
+        NCard("Firmware", SBlue, Icons.Default.Build) {
             Text("Installed: " + installed.ifEmpty { "unknown" } + (latest?.let { "     Latest: $it" } ?: ""))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { check() }, enabled = !busy) { Text("Check for update") }
+                Button(onClick = { check() }, enabled = !busy, colors = nBlue()) { Text("Check for update") }
                 val l = latest
                 if (l != null && installed.isNotEmpty() && FirmwareHub.newer(l, installed)) {
-                    Button(onClick = { update() }, enabled = !busy) { Text("Update now") }
+                    Button(onClick = { update() }, enabled = !busy, colors = nGreen()) { Text("Update now") }
                 }
             }
-            Text("Channels", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Channels", SViolet, Icons.Default.Edit) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { if (pendingCh > 1) pendingCh-- }, enabled = !busy) { Text("\u2212") }
+                Button(onClick = { if (pendingCh > 1) pendingCh-- }, enabled = !busy, colors = nBlue()) { Text("\u2212") }
                 Text("$pendingCh", style = MaterialTheme.typography.titleLarge)
-                OutlinedButton(onClick = { if (pendingCh < 8) pendingCh++ }, enabled = !busy) { Text("+") }
+                Button(onClick = { if (pendingCh < 8) pendingCh++ }, enabled = !busy, colors = nBlue()) { Text("+") }
                 Button(
                     onClick = {
                         scope.launch {
@@ -253,14 +263,17 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                             busy = false
                         }
                     },
-                    enabled = !busy && pendingCh != chCount
+                    enabled = !busy && pendingCh != chCount,
+                    colors = nGreen()
                 ) { Text("Apply") }
             }
             Text(
                 "How many relays are fitted (1 to 8). The ESP32 restarts after Apply.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("After a power cut", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Power and switches", SGreen, Icons.Default.Settings) {
+            Text("After a power cut", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = boot == "last", onClick = { saveBoot("last") }, label = { Text("Restore last state") }, enabled = supported)
                 FilterChip(selected = boot == "off", onClick = { saveBoot("off") }, label = { Text("Always OFF") }, enabled = supported)
@@ -269,7 +282,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 "Restore last state can switch a heater or iron back on by itself. Choose Always OFF for those.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Wall switches", style = MaterialTheme.typography.titleMedium)
+            Text("Wall switches", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = sw == 0, onClick = { saveSwitch(0) }, label = { Text("Off") }, enabled = supported)
                 FilterChip(selected = sw == 1, onClick = { saveSwitch(1) }, label = { Text("Push button") }, enabled = supported)
@@ -281,7 +294,8 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     "Never connect mains wiring to the ESP32. Use an isolated sensing module fitted by an electrician.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Auto-off timer", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Auto-off timer", SAmber, Icons.Default.DateRange, Color(0xFF2B1A00)) {
             maxon.forEachIndexed { i, v ->
                 OutlinedTextField(
                     value = v,
@@ -290,14 +304,18 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     singleLine = true, enabled = supported, modifier = Modifier.fillMaxWidth()
                 )
             }
-            Button(onClick = { saveMaxon() }, enabled = supported && maxon.isNotEmpty()) { Text("Save auto-off") }
+            Button(onClick = { saveMaxon() }, enabled = supported && maxon.isNotEmpty(), colors = nGreen()) { Text("Save auto-off") }
             Text(
                 "A channel switches OFF by itself after this many minutes (0 to 1440). Counting restarts after a power cut.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Vacation mode", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Vacation mode", SViolet, Icons.Default.Home) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Switch(checked = vacOn, onCheckedChange = { vacOn = it }, enabled = supported)
+                Switch(
+                    checked = vacOn, onCheckedChange = { vacOn = it }, enabled = supported,
+                    colors = SwitchDefaults.colors(checkedTrackColor = SGreen, checkedThumbColor = Color.White, checkedBorderColor = SGreen)
+                )
                 Text(if (vacOn) "On" else "Off")
             }
             for (i in 0 until chCount) {
@@ -305,7 +323,8 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     Checkbox(
                         checked = ((vacMask shr i) and 1) == 1,
                         onCheckedChange = { c -> vacMask = if (c) vacMask or (1 shl i) else vacMask and (1 shl i).inv() },
-                        enabled = supported
+                        enabled = supported,
+                        colors = CheckboxDefaults.colors(checkedColor = SGreen)
                     )
                     Text("Channel ${i + 1}")
                 }
@@ -314,19 +333,21 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 OutlinedTextField(value = vacS, onValueChange = { vacS = it }, label = { Text("From (HH:MM)") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
                 OutlinedTextField(value = vacE, onValueChange = { vacE = it }, label = { Text("Until (HH:MM)") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
             }
-            Button(onClick = { saveVac() }, enabled = supported) { Text("Save vacation mode") }
+            Button(onClick = { saveVac() }, enabled = supported, colors = nGreen()) { Text("Save vacation mode") }
             Text(
                 "While on, the ticked channels switch ON and OFF at random times inside this window, so the house looks lived in.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Sunrise / sunset location", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Sunrise and sunset", SViolet, Icons.Default.LocationOn) {
+            Text("Location", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = sunLat, onValueChange = { sunLat = it }, label = { Text("Latitude") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
                 OutlinedTextField(value = sunLon, onValueChange = { sunLon = it }, label = { Text("Longitude") }, singleLine = true, enabled = supported, modifier = Modifier.weight(1f))
             }
-            Button(onClick = { saveSun() }, enabled = supported) { Text("Save location") }
+            Button(onClick = { saveSun() }, enabled = supported, colors = nGreen()) { Text("Save location") }
             if (sunInfo.isNotEmpty()) Text(sunInfo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Sunrise / sunset schedules", style = MaterialTheme.typography.titleMedium)
+            Text("Schedules", style = MaterialTheme.typography.titleSmall)
             val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
             sunList.forEachIndexed { i, x ->
                 val dn = dayNames.filterIndexed { d, _ -> ((x[2] shr d) and 1) == 1 }.joinToString(" ")
@@ -335,7 +356,7 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                         (if (x[0] == 0) "Sunrise" else "Sunset") + (if (x[1] >= 0) " +" else " ") + x[1] + " min: channel " + x[3] + " " + (if (x[4] == 1) "ON" else "OFF") + " (" + dn + ")",
                         modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall
                     )
-                    TextButton(onClick = { saveSunList(sunList.filterIndexed { j, _ -> j != i }) }, enabled = supported) { Text("Delete") }
+                    TextButton(onClick = { saveSunList(sunList.filterIndexed { j, _ -> j != i }) }, enabled = supported) { Text("Delete", color = Color(0xFFE24B4A)) }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -355,12 +376,13 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                     }
                 }
             }
-            Button(onClick = { addSun() }, enabled = supported) { Text("Add sun schedule") }
+            Button(onClick = { addSun() }, enabled = supported, colors = nGreen()) { Text("Add sun schedule") }
             Text(
                 "Offset is in minutes from sunrise or sunset: minus = before, plus = after. Up to 8 entries. Uses the location above.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text("Certificate", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Certificate", SAmber, Icons.Default.Lock, Color(0xFF2B1A00)) {
             OutlinedTextField(
                 value = certTicket, onValueChange = { certTicket = it },
                 label = { Text("Ticket (IBN-TICKET:...)") }, maxLines = 3,
@@ -374,19 +396,21 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                         busy = false
                     }
                 },
-                enabled = !busy && certTicket.isNotBlank()
+                enabled = !busy && certTicket.isNotBlank(),
+                colors = nGreen()
             ) { Text("Apply certificate") }
             if (certMsg.isNotEmpty()) Text(certMsg, style = MaterialTheme.typography.bodySmall)
-            Text("Active timers", style = MaterialTheme.typography.titleMedium)
+        }
+        NCard("Active timers", SGreen, Icons.Default.Refresh) {
             if (timers.isEmpty()) Text("No timer running.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             timers.forEach { (ch, on, left) ->
                 val name = d.appliances.firstOrNull { it.nodeId == cfg.id && it.channel == ch }?.name ?: "Channel $ch"
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("$name \u2192 ${if (on) "ON" else "OFF"} in ${fmtLeft(left)}", modifier = Modifier.weight(1f))
-                    TextButton(onClick = { cancelTimer(ch) }) { Text("Cancel") }
+                    TextButton(onClick = { cancelTimer(ch) }) { Text("Cancel", color = Color(0xFFE24B4A)) }
                 }
             }
-            OutlinedButton(onClick = { scope.launch { load() } }) { Text("Refresh") }
+            Button(onClick = { scope.launch { load() } }, colors = nBlue()) { Text("Refresh") }
         }
     }
 }
@@ -401,3 +425,24 @@ private suspend fun applyCert(client: HttpNodeClient, ticket: String): String {
     val r = client.provision(p[2]) ?: return "Nahi hua. Token aur firmware (0.7.0 ya naya) check karein."
     return if (Regex("\"ok\": *true").containsMatchIn(r)) "Certificate lag gaya." else "Jawab: " + r
 }
+
+
+@Composable
+private fun NCard(title: String, color: Color, icon: ImageVector, tint: Color = Color.White, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            CardHeader(title, color, icon, tint)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun nGreen() = ButtonDefaults.buttonColors(containerColor = SGreen, contentColor = Color.White)
+
+@Composable
+private fun nBlue() = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White)
