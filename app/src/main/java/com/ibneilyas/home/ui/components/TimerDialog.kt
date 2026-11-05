@@ -7,9 +7,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.domain.Appliance
+
+private val TmGreen = Color(0xFF12A150)
+private val TmBlue = Color(0xFF1E7FE0)
+private val TmAmber = Color(0xFFFFB020)
+private val TmAmberText = Color(0xFF2B1A00)
+private val TmRed = Color(0xFFE24B4A)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun tmChip(c: Color, t: Color = Color.White) = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = c,
+    selectedLabelColor = t
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,18 +43,18 @@ fun TimerDialog(
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Device", style = MaterialTheme.typography.labelLarge)
                 devices.forEach { a ->
-                    FilterChip(selected = sel == a.id, onClick = { sel = a.id }, label = { Text(a.name) })
+                    FilterChip(selected = sel == a.id, onClick = { sel = a.id }, label = { Text(a.name) }, colors = tmChip(TmBlue))
                 }
                 Text("When the time is up", style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !on, onClick = { on = false }, label = { Text("Turn OFF") })
-                    FilterChip(selected = on, onClick = { on = true }, label = { Text("Turn ON") })
+                    FilterChip(selected = !on, onClick = { on = false }, label = { Text("Turn OFF") }, colors = tmChip(TmAmber, TmAmberText))
+                    FilterChip(selected = on, onClick = { on = true }, label = { Text("Turn ON") }, colors = tmChip(TmGreen))
                 }
                 Text("Minutes", style = MaterialTheme.typography.labelLarge)
                 listOf(5, 15, 30, 60, 120, 240).chunked(3).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         row.forEach { v ->
-                            FilterChip(selected = mins == "$v", onClick = { mins = "$v" }, label = { Text("$v") })
+                            FilterChip(selected = mins == "$v", onClick = { mins = "$v" }, label = { Text("$v") }, colors = tmChip(TmBlue))
                         }
                     }
                 }
@@ -51,13 +65,17 @@ fun TimerDialog(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                TextButton(onClick = { sel?.let { id -> onStart(id, 0, on) } }) { Text("Cancel the timer on this device") }
+                TextButton(
+                    onClick = { sel?.let { id -> onStart(id, 0, on) } },
+                    colors = ButtonDefaults.textButtonColors(contentColor = TmRed)
+                ) { Text("Cancel the timer on this device") }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { sel?.let { id -> if (m != null) onStart(id, m, on) } },
-                enabled = sel != null && m != null && m in 1..1440
+                enabled = sel != null && m != null && m in 1..1440,
+                colors = ButtonDefaults.buttonColors(containerColor = TmGreen, contentColor = Color.White)
             ) { Text("Start") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } }
