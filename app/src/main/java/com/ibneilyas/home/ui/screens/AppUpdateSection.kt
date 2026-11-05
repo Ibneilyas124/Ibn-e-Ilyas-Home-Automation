@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,9 +27,10 @@ fun AppUpdateSection() {
             if (msg.isNotEmpty()) Text(msg)
             if (pct == -1) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (pct >= 0) LinearProgressIndicator(progress = { pct / 100f }, modifier = Modifier.fillMaxWidth())
-            if (apk != null) Button(onClick = { apk?.let { AppUpdate.install(ctx, it) } }) { Text("Install") }
+            if (apk != null) Button(onClick = { apk?.let { AppUpdate.install(ctx, it) } }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White)) { Text("Install") }
             Button(
                 enabled = !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White),
                 onClick = {
                     scope.launch {
                         busy = true

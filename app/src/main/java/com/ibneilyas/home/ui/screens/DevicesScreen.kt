@@ -72,8 +72,8 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     val cs = MaterialTheme.colorScheme
-                    val boxBg = when (online) { true -> Color(0xFF12A150); false -> cs.surfaceVariant; null -> cs.surfaceVariant }
-                    val boxFg = when (online) { true -> Color.White; false -> cs.onSurfaceVariant; null -> cs.onSurfaceVariant }
+                    val boxBg = Color(0xFF1E7FE0)
+                    val boxFg = Color.White
                     Box(
                         Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(boxBg),
                         contentAlignment = Alignment.Center
@@ -99,7 +99,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                         if (!d.mockMode) FilledTonalButton(onClick = { onSchedules(n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Schedules") }
                         if (!d.mockMode) FilledTonalButton(onClick = { onSchedules("opt:" + n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Options") }
                         FilledTonalButton(onClick = { tokenFor = n.id }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12A150), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Set token") }
-                        if (n.token.isNotBlank()) FilledTonalButton(colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp), onClick = {
+                        if (n.token.isNotBlank()) FilledTonalButton(colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFFFFB020), contentColor = Color(0xFF2B1A00)), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp), onClick = {
                             val i = android.content.Intent(android.content.Intent.ACTION_SEND)
                                 .setType("text/plain")
                                 .putExtra(android.content.Intent.EXTRA_TEXT, "Ibn e Ilyas Home setup code:\n" + encodeSetup(n.room, n.ip, n.token))

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +37,7 @@ fun FlashSection() {
             "Firmware $fw is app mein bundled hai. ESP32 ko OTG cable se phone se jorein. Flash ke dauran cable na nikalein aur screen na chhorein.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        OutlinedButton(
+        Button(
             onClick = {
                 scope.launch {
                     busy = true; logText = ""; progress = -1
@@ -45,6 +46,7 @@ fun FlashSection() {
                 }
             },
             enabled = !busy,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White),
             modifier = Modifier.fillMaxWidth()
         ) { Text("Detect ESP32 (USB)") }
         OutlinedTextField(
@@ -62,6 +64,7 @@ fun FlashSection() {
                 }
             },
             enabled = !busy && (ticket.isNotBlank() || com.ibneilyas.home.core.BrandConfig.DEV_SKIP_TICKET),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text("Flash firmware") }
         if (progress in 0..100) LinearProgressIndicator(progress = progress / 100f, modifier = Modifier.fillMaxWidth())
