@@ -20,6 +20,7 @@
         </intent>
     </queries>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -65,5 +66,6 @@
             </intent-filter>
         </receiver>
     <service android:name=".GeoRunService" android:exported="false" android:foregroundServiceType="shortService" />
+    <service android:name=".GeoPollService" android:exported="false" android:foregroundServiceType="location" />
     </application>
 </manifest>

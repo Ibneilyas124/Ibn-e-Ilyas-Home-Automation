@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import com.ibneilyas.home.GeoRunService
+import com.ibneilyas.home.GeoPollService
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -91,12 +92,14 @@ object HomeGeo {
     fun register(ctx: Context): Boolean {
         val c = load(ctx) ?: return false
         if (!c.enabled) return false
+        val ava = com.google.android.gms.common.GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx)
+        glog(ctx, "register: play services " + (if (ava == 0) "OK" else "code " + ava))
         return try {
             val g = Geofence.Builder()
                 .setRequestId("home")
                 .setCircularRegion(c.lat, c.lon, c.radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build()
             val req = GeofencingRequest.Builder()
                 .setInitialTrigger(0)
@@ -106,6 +109,7 @@ object HomeGeo {
                 .addOnSuccessListener {
                     sp(ctx).edit().putLong("regat", System.currentTimeMillis()).remove("regerr").apply()
                     glog(ctx, "register OK")
+                    GeoPollService.start(ctx)
                 }
                 .addOnFailureListener { e ->
                     glog(ctx, "register ERR " + (e.message ?: "unknown"))
@@ -122,6 +126,7 @@ object HomeGeo {
         try {
             LocationServices.getGeofencingClient(ctx).removeGeofences(pending(ctx))
             sp(ctx).edit().remove("regat").apply()
+            GeoPollService.stop(ctx)
         } catch (e: Exception) { }
     }
 

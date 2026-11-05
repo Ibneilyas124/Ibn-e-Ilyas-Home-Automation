@@ -13,6 +13,7 @@ class GeoReceiver : BroadcastReceiver() {
         if (ev == null) { HomeGeo.glog(ctx, "receiver: no event in intent"); return }
         if (ev.hasError()) { HomeGeo.glog(ctx, "receiver: error code " + ev.errorCode); return }
         HomeGeo.glog(ctx, "receiver: transition " + ev.geofenceTransition + " (1=enter)")
+        if (ev.geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) { HomeGeo.glog(ctx, "receiver: exited home area"); return }
         if (ev.geofenceTransition != Geofence.GEOFENCE_TRANSITION_ENTER) return
         HomeGeo.notifyArrived(ctx)
     }
