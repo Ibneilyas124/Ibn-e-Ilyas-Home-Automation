@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -62,6 +63,7 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
         }
         SettingsCard { AppearanceSection(vm) }
         SettingsCard {
+            CardHeader("Voice", SViolet, Icons.Default.Mic)
             VoiceOptionsSection(vm)
             VoiceRoomSection(vm)
             RecentVoiceSection(vm)
