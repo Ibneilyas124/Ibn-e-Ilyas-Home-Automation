@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.ibneilyas.home.domain.SchedEntry
 import com.ibneilyas.home.domain.SchedFormat
 import com.ibneilyas.home.ui.HomeViewModel
@@ -22,10 +23,10 @@ import kotlinx.coroutines.launch
 private fun SchedRow(e: SchedEntry, enabled: Boolean, canEdit: Boolean, onEdit: () -> Unit, onDelete: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).clickable(enabled = enabled && canEdit) { onEdit() }.padding(vertical = 8.dp)) {
-            Text((if (e.on) "Turn ON at " else "Turn OFF at ") + SchedFormat.time(e.h, e.m), fontWeight = FontWeight.SemiBold)
+            Text((if (e.on) "Turn ON at " else "Turn OFF at ") + SchedFormat.time(e.h, e.m), fontWeight = FontWeight.SemiBold, color = if (e.on) SGreen else SAmber)
             Text(SchedFormat.days(e.days), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        IconButton(onClick = onDelete, enabled = enabled) { Icon(Icons.Filled.Delete, contentDescription = "Delete schedule") }
+        IconButton(onClick = onDelete, enabled = enabled) { Icon(Icons.Filled.Delete, contentDescription = "Delete schedule", tint = Color(0xFFE24B4A)) }
     }
 }
 
@@ -124,11 +125,12 @@ fun SchedulesHubScreen(roomId: String?, vm: HomeViewModel, onBack: () -> Unit) {
             )
         }
         if (d.mockMode) item { Text("Mock mode: schedules are only saved on this phone as a preview. Nothing runs until you use a real ESP32.", modifier = Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.primary) }
-        if (status.isNotEmpty()) item { Text(status, modifier = Modifier.padding(start = 12.dp), color = MaterialTheme.colorScheme.primary) }
+        if (status.isNotEmpty()) item { Text(status, modifier = Modifier.padding(start = 12.dp), color = if (listOf("annot", "ailed", "rejected", "not reachable", "can keep").any { status.contains(it) }) Color(0xFFE24B4A) else SGreen) }
         item {
             Button(
                 onClick = { editing = null; dialog = true },
                 enabled = shown.isNotEmpty() && !busy,
+                colors = ButtonDefaults.buttonColors(containerColor = SGreen, contentColor = Color.White),
                 modifier = Modifier.padding(start = 12.dp).fillMaxWidth().height(56.dp)
             ) { Text("+ Add schedule") }
         }

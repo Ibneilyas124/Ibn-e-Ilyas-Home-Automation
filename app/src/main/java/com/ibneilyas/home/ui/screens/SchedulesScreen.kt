@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.ibneilyas.home.data.HttpNodeClient
 import com.ibneilyas.home.ui.HomeViewModel
 import kotlinx.coroutines.launch
@@ -97,7 +98,7 @@ fun SchedulesScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         item {
             Column(Modifier.padding(start = 12.dp)) {
                 if (clock.isNotEmpty()) Text(clock, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (status.isNotEmpty()) Text(status, color = MaterialTheme.colorScheme.primary)
+                if (status.isNotEmpty()) Text(status, color = if (listOf("annot", "ailed", "rejected", "not reachable", "can keep").any { status.contains(it) }) Color(0xFFE24B4A) else SGreen)
             }
         }
         items(list.size) { i ->
@@ -105,11 +106,11 @@ fun SchedulesScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             Card(Modifier.fillMaxWidth().padding(start = 12.dp)) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("${timeText(s.h, s.m)}  \u2022  Channel ${s.ch} ${if (s.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold)
+                        Text("${timeText(s.h, s.m)}  \u2022  Channel ${s.ch} ${if (s.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold, color = if (s.on) SGreen else SAmber)
                         Text(daysText(s.days), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { save(list.filterIndexed { j, _ -> j != i }) }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete")
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = Color(0xFFE24B4A))
                     }
                 }
             }
@@ -148,6 +149,7 @@ fun SchedulesScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 Button(
                     onClick = { save(list + SchedItem(h!!, m!!, days, c!!, on)) },
                     enabled = ok,
+                    colors = ButtonDefaults.buttonColors(containerColor = SGreen, contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) { Text("Add schedule") }
             }
