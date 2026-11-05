@@ -226,7 +226,10 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
                 Text(cfg.room + "  \u2022  " + cfg.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        if (status.isNotEmpty()) Text(status, color = SGreen, modifier = Modifier.padding(start = 12.dp))
+        if (status.isNotEmpty()) {
+            val bad = listOf("annot", "ould not", "ailed", "Use HH", "Latitude must", "Offset -", "Pick at least", "Maximum").any { status.contains(it) }
+            Text(status, color = if (bad) Color(0xFFE24B4A) else SGreen, modifier = Modifier.padding(start = 12.dp))
+        }
         if (otaPct == -1) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 12.dp))
         if (otaPct >= 0) LinearProgressIndicator(progress = { otaPct / 100f }, modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp))
         if (!supported) {
