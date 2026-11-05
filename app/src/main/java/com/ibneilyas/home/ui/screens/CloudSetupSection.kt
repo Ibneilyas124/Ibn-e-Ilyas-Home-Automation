@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
@@ -41,9 +42,10 @@ fun CloudSetupSection(vm: HomeViewModel) {
                         }
                     },
                     enabled = !busy && key.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) { Text("Activate remote access") }
-                OutlinedButton(
+                Button(
                     onClick = {
                         scope.launch {
                             busy = true
@@ -55,11 +57,12 @@ fun CloudSetupSection(vm: HomeViewModel) {
                         }
                     },
                     enabled = !busy,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) { Text("Home already set up (extra phone)") }
             } else {
                 Text("Remote access is set up for " + esp + ".", style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(
+                Button(
                     onClick = {
                         scope.launch {
                             busy = true
@@ -70,6 +73,7 @@ fun CloudSetupSection(vm: HomeViewModel) {
                         }
                     },
                     enabled = !busy,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) { Text("Send settings to the controller again") }
             }
