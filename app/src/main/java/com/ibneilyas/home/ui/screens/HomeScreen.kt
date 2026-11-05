@@ -31,8 +31,7 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val msg by vm.sceneMessage.collectAsState()
     val cs = MaterialTheme.colorScheme
     val haptic = LocalHapticFeedback.current
-    val ctrlOff = !d.mockMode && d.nodes.isNotEmpty() && d.onlineNodes < d.nodes.size
-    val ctrlColor = if (ctrlOff) Color(0xFFC62828) else Color(0xFF12A150)
+    val ctrlColor = Color(0xFF12A150)
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 96.dp),
