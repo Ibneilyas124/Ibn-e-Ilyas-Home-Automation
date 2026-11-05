@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -39,16 +42,19 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
     ) {
         item {
             Text("Scenes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            msg?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            msg?.let { Text(it, color = Color(0xFF12A150)) }
         }
         item {
-            OutlinedButton(onClick = onSchedules, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Schedules (automatic ON/OFF by time)") }
+            Button(onClick = onSchedules, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Schedules (automatic ON/OFF by time)") }
         }
         if (scenes.isEmpty()) {
             item { Text("No scenes yet. Tap Add scene below.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
         items(scenes, key = { it.id }) { s ->
             val busy = running == s.id
+            val sci = (s.name.hashCode() and 0x7fffffff) % 4
+            val sc = listOf(Color(0xFF12A150), Color(0xFF1E7FE0), Color(0xFF7C4DDB), Color(0xFFFFB020))[sci]
+            val onSc = if (sci == 3) Color(0xFF2B1A00) else Color.White
             Card(
                 onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.runScene(s) },
                 shape = RoundedCornerShape(24.dp),
@@ -58,7 +64,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
                 Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.PlayArrow, contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp)
+                        tint = onSc, modifier = Modifier.size(46.dp).clip(RoundedCornerShape(50)).background(sc).padding(11.dp)
                     )
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
@@ -70,36 +76,38 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
                         )
                     }
                     if (busy) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF12A150))
                     } else {
                         IconButton(onClick = { vm.deleteScene(s.id) }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Delete scene")
+                            Icon(Icons.Filled.Delete, contentDescription = "Delete scene", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
         }
         item {
-            Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Button(onClick = { adding = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White), modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Add scene")
             }
         }
         item {
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = {
                     val lights = d.appliances.filter { it.type == ApplianceType.LIGHT }.map { SceneAction(it.id, false) }
                     vm.addScene("All Lights OFF", lights)
                 },
                 enabled = d.appliances.any { it.type == ApplianceType.LIGHT },
+                colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12335E), contentColor = Color(0xFF8CC4FF)),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Create All Lights OFF") }
         }
         item {
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = { vm.addScene("All OFF", d.appliances.map { SceneAction(it.id, false) }) },
                 enabled = d.appliances.isNotEmpty() && scenes.none { it.name == "All OFF" },
+                colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12335E), contentColor = Color(0xFF8CC4FF)),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Create All OFF") }
         }
