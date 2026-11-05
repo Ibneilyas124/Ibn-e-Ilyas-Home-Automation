@@ -162,6 +162,6 @@ fun SchedulesHubScreen(roomId: String?, vm: HomeViewModel, onBack: () -> Unit) {
                 }
             }
         }
-        item { TextButton(onClick = { scope.launch { reload() } }, modifier = Modifier.padding(start = 12.dp)) { Text("Refresh") } }
+        item { TextButton(onClick = { scope.launch { reload() } }, colors = ButtonDefaults.textButtonColors(contentColor = SBlue), modifier = Modifier.padding(start = 12.dp)) { Text("Refresh") } }
     }
 }

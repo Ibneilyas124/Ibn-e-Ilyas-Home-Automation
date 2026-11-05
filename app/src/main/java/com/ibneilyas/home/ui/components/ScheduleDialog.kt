@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ibneilyas.home.ui.screens.SGreen
 import com.ibneilyas.home.domain.Appliance
 import com.ibneilyas.home.domain.Room
 import com.ibneilyas.home.domain.SchedEntry
@@ -62,12 +63,12 @@ fun ScheduleDialog(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Turn ON at", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-                    Switch(checked = useOn, onCheckedChange = { useOn = it })
+                    Switch(checked = useOn, onCheckedChange = { useOn = it }, colors = SwitchDefaults.colors(checkedTrackColor = SGreen, checkedThumbColor = androidx.compose.ui.graphics.Color.White, checkedBorderColor = SGreen))
                 }
                 if (useOn) TimeInput(state = onS)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Turn OFF at", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-                    Switch(checked = useOff, onCheckedChange = { useOff = it })
+                    Switch(checked = useOff, onCheckedChange = { useOff = it }, colors = SwitchDefaults.colors(checkedTrackColor = SGreen, checkedThumbColor = androidx.compose.ui.graphics.Color.White, checkedBorderColor = SGreen))
                 }
                 if (useOff) TimeInput(state = offS)
                 Text("Days", style = MaterialTheme.typography.labelLarge)
@@ -97,7 +98,8 @@ fun ScheduleDialog(
                         onSave(d, a, b, days and 127)
                     }
                 },
-                enabled = valid
+                enabled = valid,
+                colors = ButtonDefaults.textButtonColors(contentColor = SGreen)
             ) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

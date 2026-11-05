@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.platform.LocalContext
 import com.ibneilyas.home.data.HttpNodeClient
 import com.ibneilyas.home.data.UsageItem
@@ -78,12 +80,12 @@ fun ActivityScreen(vm: HomeViewModel, onBack: () -> Unit) {
                 Text("Activity history", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
         }
-        if (status.isNotEmpty()) item { Text(status, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp)) }
+        if (status.isNotEmpty()) item { Text(status, color = if (status.contains("not reachable")) Color(0xFFE24B4A) else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp)) }
         if (status.isEmpty() && events.isEmpty()) item { Text("No activity recorded yet.", modifier = Modifier.padding(start = 12.dp)) }
         if (usage.isNotEmpty()) item {
             Card(Modifier.fillMaxWidth().padding(start = 12.dp)) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("Usage, last 7 days (estimate)", fontWeight = FontWeight.SemiBold)
+                    CardHeader("Usage, last 7 days (estimate)", SAmber, Icons.Default.Info, Color(0xFF2B1A00))
                     usage.forEach { u ->
                         val nm = d.appliances.firstOrNull { it.nodeId.toString() == u.node && it.channel == u.ch }?.name ?: "Channel ${u.ch}"
                         val rm = nodes.firstOrNull { it.id.toString() == u.node }?.room ?: ""
@@ -97,7 +99,7 @@ fun ActivityScreen(vm: HomeViewModel, onBack: () -> Unit) {
             val whenText = if (e.t > 0) DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(e.t * 1000)) else "time unknown"
             Card(Modifier.fillMaxWidth().padding(start = 12.dp)) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("${e.device} (${e.room}) \u2192 ${if (e.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold)
+                    Text("${e.device} (${e.room}) \u2192 ${if (e.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold, color = if (e.on) SGreen else SAmber)
                     Text(srcName(e.src) + "  \u2022  " + whenText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
