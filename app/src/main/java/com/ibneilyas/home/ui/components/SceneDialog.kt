@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.domain.Appliance
 import com.ibneilyas.home.domain.Room
@@ -35,8 +36,8 @@ fun SceneEditDialog(
                             Text(a.name)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(selected = choice[a.id] == null, onClick = { choice.remove(a.id) }, label = { Text("Skip") })
-                                FilterChip(selected = choice[a.id] == true, onClick = { choice[a.id] = true }, label = { Text("ON") })
-                                FilterChip(selected = choice[a.id] == false, onClick = { choice[a.id] = false }, label = { Text("OFF") })
+                                FilterChip(selected = choice[a.id] == true, onClick = { choice[a.id] = true }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = DlgGreen, selectedLabelColor = Color.White), label = { Text("ON") })
+                                FilterChip(selected = choice[a.id] == false, onClick = { choice[a.id] = false }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = DlgAmber, selectedLabelColor = Color(0xFF2B1A00)), label = { Text("OFF") })
                             }
                         }
                     }
@@ -46,6 +47,7 @@ fun SceneEditDialog(
         confirmButton = {
             TextButton(
                 onClick = { onSave(name.trim(), choice.map { SceneAction(it.key, it.value) }) },
+                colors = dlgSaveColors(),
                 enabled = name.isNotBlank() && choice.isNotEmpty()
             ) { Text("Save") }
         },
