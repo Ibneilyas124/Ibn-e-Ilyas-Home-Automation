@@ -15,6 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -84,13 +87,12 @@ fun GeoSection(vm: HomeViewModel) {
         msg = if (ok) "Background location allowed" else "Open app settings and choose Allow all the time"
     }
 
-    Card(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Arrive home", fontWeight = FontWeight.Bold)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CardHeader("Arrive home", SGreen, Icons.Default.LocationOn)
             Text("When you reach home your scene runs by itself. Turn Automatic off to get a notification instead.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Enabled", Modifier.weight(1f))
-                Switch(checked = c?.enabled == true, onCheckedChange = { on ->
+                Switch(colors = gsw(), checked = c?.enabled == true, onCheckedChange = { on ->
                     val o = cfg
                     if (o == null) {
                         msg = "Set home here first"
@@ -103,20 +105,20 @@ fun GeoSection(vm: HomeViewModel) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Automatic (no tap needed)", Modifier.weight(1f))
-                Switch(checked = auto, onCheckedChange = { v ->
+                Switch(colors = gsw(), checked = auto, onCheckedChange = { v ->
                     auto = v
                     HomeGeo.setAuto(ctx, v)
                 })
             }
             Text(if (c == null) "Home: not set" else "Home: " + String.format("%.5f, %.5f", c.lat, c.lon))
-            Button(onClick = {
+            Button(colors = ButtonDefaults.buttonColors(containerColor = SGreen, contentColor = Color.White), onClick = {
                 if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     grabHere()
                 } else {
                     locLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                 }
             }) { Text("Set home here") }
-            OutlinedButton(onClick = {
+            Button(colors = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White), onClick = {
                 if (Build.VERSION.SDK_INT >= 29) bgLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             }) { Text("Allow location all the time") }
             Text("Radius: ${rad.toInt()} m")
@@ -124,6 +126,7 @@ fun GeoSection(vm: HomeViewModel) {
                 value = rad,
                 onValueChange = { rad = it },
                 valueRange = 100f..500f,
+                colors = SliderDefaults.colors(thumbColor = SGreen, activeTrackColor = SGreen),
                 onValueChangeFinished = {
                     val o = cfg
                     if (o != null) applyCfg(o.copy(radius = rad))
@@ -133,11 +136,11 @@ fun GeoSection(vm: HomeViewModel) {
             if (scenes.isEmpty()) Text("No scenes yet. Create one in Scenes first.")
             scenes.forEach { s ->
                 Row(Modifier.fillMaxWidth().clickable { pick(s.id, s.name) }, verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = c?.sceneId == s.id, onClick = { pick(s.id, s.name) })
+                    RadioButton(selected = c?.sceneId == s.id, onClick = { pick(s.id, s.name) }, colors = RadioButtonDefaults.colors(selectedColor = SGreen))
                     Text(s.name)
                 }
             }
-            OutlinedButton(onClick = {
+            Button(colors = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White), onClick = {
                 val o = cfg
                 if (o == null || o.sceneId.isEmpty()) {
                     msg = "Set home and choose a scene first"
@@ -148,7 +151,10 @@ fun GeoSection(vm: HomeViewModel) {
             TextButton(onClick = { status = HomeGeo.status(ctx) }) { Text("Status: $status (tap to refresh)") }
             val lg = HomeGeo.logText(ctx)
             Text(if (lg.isEmpty()) "Geofence log: empty" else "Geofence log:\n" + lg, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
-        }
+            if (msg.isNotEmpty()) Text(msg, color = SGreen)
     }
 }
+
+
+@Composable
+private fun gsw() = SwitchDefaults.colors(checkedTrackColor = SGreen, checkedThumbColor = Color.White, checkedBorderColor = SGreen)

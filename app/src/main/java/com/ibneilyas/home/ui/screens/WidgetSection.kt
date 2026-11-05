@@ -12,6 +12,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import com.ibneilyas.home.MicWidget
 import java.text.DateFormat
 import java.util.Date
@@ -30,14 +33,15 @@ fun WidgetSection() {
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Voice widget", style = MaterialTheme.typography.titleMedium)
+        CardHeader("Voice widget", SBlue, Icons.Default.Add)
         Text(
             (if (registered) "Widget registered with Android: yes" else "Widget registered with Android: NO") +
                 "\nApp installed: $updated",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        OutlinedButton(
+        Button(
+            colors = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White),
             onClick = {
                 msg = if (!mgr.isRequestPinAppWidgetSupported()) {
                     "This launcher cannot add widgets from the app. Long-press the app icon and choose Voice command."
@@ -49,6 +53,6 @@ fun WidgetSection() {
             },
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text("Add voice widget to Home screen") }
-        if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
+        if (msg.isNotEmpty()) Text(msg, color = SGreen)
     }
 }

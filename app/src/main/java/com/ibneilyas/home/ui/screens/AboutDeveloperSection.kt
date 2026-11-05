@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.ibneilyas.home.core.BrandConfig
 
 /** The developer information popup. Used in Settings and on the activation screen. */
@@ -25,7 +26,7 @@ fun DeveloperInfoDialog(onDismiss: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Sarfraz Qureshi", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Developed By Ibn E Ilyas Technologies", color = MaterialTheme.colorScheme.primary)
+                Text("Developed By Ibn E Ilyas Technologies", color = SGreen)
                 Spacer(Modifier.height(8.dp))
                 Text("\uD83D\uDCCD Naushehro Feroz, Sindh, Pakistan")
                 TextButton(onClick = { go("mailto:ahmedsarfraz650@gmail.com") }) { Text("\uD83D\uDCE7 ahmedsarfraz650@gmail.com") }
@@ -49,7 +50,8 @@ fun DeveloperInfoDialog(onDismiss: () -> Unit) {
 @Composable
 fun AboutDeveloperSection() {
     var open by remember { mutableStateOf(false) }
-    OutlinedButton(
+    Button(
+        colors = ButtonDefaults.buttonColors(containerColor = SViolet, contentColor = Color.White),
         onClick = { open = true },
         modifier = Modifier.fillMaxWidth().height(56.dp)
     ) { Text("About developer") }
