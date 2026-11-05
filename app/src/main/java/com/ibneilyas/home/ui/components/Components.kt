@@ -97,10 +97,10 @@ fun RoomCard(
     ) {
         Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(cs.primaryContainer),
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(Color(0xFF1E7FE0)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(roomIcon(room.iconKey), contentDescription = null, tint = cs.onPrimaryContainer)
+                Icon(roomIcon(room.iconKey), contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
