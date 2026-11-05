@@ -11,6 +11,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -103,20 +106,33 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit 
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (total > 0) {
+                    LinearProgressIndicator(
+                        progress = { onCount.toFloat() / total },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(6.dp)),
+                        color = Color(0xFF12A150),
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     FilledTonalButton(
                         onClick = { adding = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White),
                         modifier = Modifier.weight(1f).height(48.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) { Text("+ Add", maxLines = 1) }
                     OutlinedButton(
                         onClick = { timing = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White),
+                        border = null,
                         enabled = total > 0,
                         modifier = Modifier.weight(1f).height(48.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) { Text("Timer", maxLines = 1) }
                     OutlinedButton(
                         onClick = onSchedules,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White),
+                        border = null,
                         enabled = total > 0,
                         modifier = Modifier.weight(1f).height(48.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp)

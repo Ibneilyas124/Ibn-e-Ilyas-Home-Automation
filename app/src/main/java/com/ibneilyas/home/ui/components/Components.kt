@@ -143,10 +143,10 @@ fun ApplianceTile(
     val isOn = online && state.isOn
     val container = when {
         !online -> cs.surface
-        isOn -> cs.primary
+        isOn -> Color(0xFF12A150)
         else -> cs.surfaceVariant
     }
-    val content = if (isOn) cs.onPrimary else cs.onSurface
+    val content = if (isOn) Color.White else cs.onSurface
     val subtitle = when {
         state.cmd == CmdState.SENDING -> "Sending\u2026"
         state.cmd == CmdState.FAILED -> "Failed \u2022 Tap to retry"

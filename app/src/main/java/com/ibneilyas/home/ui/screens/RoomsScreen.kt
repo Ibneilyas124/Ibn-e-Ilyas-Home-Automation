@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
@@ -40,7 +41,7 @@ fun RoomsScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
             )
         }
         item {
-            Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Button(onClick = { adding = true }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White)) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Add room")
