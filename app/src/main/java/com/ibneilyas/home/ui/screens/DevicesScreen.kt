@@ -25,6 +25,7 @@ import com.ibneilyas.home.ui.components.NodeStatus
 import com.ibneilyas.home.ui.components.FlashSection
 import com.ibneilyas.home.ui.components.TextDialog
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     val nodes by vm.nodes.collectAsState()
@@ -70,7 +71,8 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     val cs = MaterialTheme.colorScheme
                     val boxBg = Color(0xFF1E7FE0)
                     val boxFg = Color.White
@@ -95,7 +97,12 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                                 else -> {}
                             }
                         }
-                        Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    }
+                    IconButton(onClick = { vm.removeNode(n.id) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                    }
+                }
+                FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (!d.mockMode) FilledTonalButton(onClick = { onSchedules(n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Schedules") }
                         if (!d.mockMode) FilledTonalButton(onClick = { onSchedules("opt:" + n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Options") }
                         FilledTonalButton(onClick = { tokenFor = n.id }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12A150), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Set token") }
@@ -105,11 +112,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                                 .putExtra(android.content.Intent.EXTRA_TEXT, "Ibn e Ilyas Home setup code:\n" + encodeSetup(n.room, n.ip, n.token))
                             ctx.startActivity(android.content.Intent.createChooser(i, "Share setup code").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                         }) { Text("Share") }
-                        }
-                    }
-                    IconButton(onClick = { vm.removeNode(n.id) }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Remove")
-                    }
+                }
                 }
             }
         }
