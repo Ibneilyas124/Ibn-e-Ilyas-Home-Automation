@@ -5,7 +5,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
-#define FW_VERSION "0.10.12"
+#define FW_VERSION "0.10.13"
 #define RELAY_ACTIVE_LOW true
 
 const uint8_t PINS[] = {16, 17, 18, 19, 21, 22, 23, 27};
