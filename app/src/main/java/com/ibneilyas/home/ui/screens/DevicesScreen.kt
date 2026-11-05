@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -71,8 +72,8 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     val cs = MaterialTheme.colorScheme
-                    val boxBg = when (online) { true -> cs.primaryContainer; false -> cs.errorContainer; null -> cs.surfaceVariant }
-                    val boxFg = when (online) { true -> cs.onPrimaryContainer; false -> cs.onErrorContainer; null -> cs.onSurfaceVariant }
+                    val boxBg = when (online) { true -> Color(0xFF12A150); false -> cs.surfaceVariant; null -> cs.surfaceVariant }
+                    val boxFg = when (online) { true -> Color.White; false -> cs.onSurfaceVariant; null -> cs.onSurfaceVariant }
                     Box(
                         Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(boxBg),
                         contentAlignment = Alignment.Center
@@ -88,17 +89,17 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
                                 gs = com.ibneilyas.home.data.HttpNodeClient("http://" + n.ip, n.token).genuineStatus()
                             }
                             when (gs) {
-                                "genuine" -> Text("Genuine controller", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                "genuine" -> Text("Genuine controller", style = MaterialTheme.typography.bodySmall, color = Color(0xFF12A150))
                                 "unprovisioned" -> Text("Not provisioned (no certificate yet)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 "oldfw" -> Text("Firmware too old for the certificate check (needs 0.7.0)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 else -> {}
                             }
                         }
-                        Row(Modifier.horizontalScroll(rememberScrollState())) {
-                        if (!d.mockMode) TextButton(onClick = { onSchedules(n.id) }) { Text("Schedules") }
-                        if (!d.mockMode) TextButton(onClick = { onSchedules("opt:" + n.id) }) { Text("Options") }
-                        TextButton(onClick = { tokenFor = n.id }) { Text("Set token") }
-                        if (n.token.isNotBlank()) TextButton(onClick = {
+                        Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (!d.mockMode) FilledTonalButton(onClick = { onSchedules(n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF7C4DDB), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Schedules") }
+                        if (!d.mockMode) FilledTonalButton(onClick = { onSchedules("opt:" + n.id) }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Options") }
+                        FilledTonalButton(onClick = { tokenFor = n.id }, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12A150), contentColor = Color.White), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp)) { Text("Set token") }
+                        if (n.token.isNotBlank()) FilledTonalButton(colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant), modifier = Modifier.height(36.dp), contentPadding = PaddingValues(horizontal = 14.dp), onClick = {
                             val i = android.content.Intent(android.content.Intent.ACTION_SEND)
                                 .setType("text/plain")
                                 .putExtra(android.content.Intent.EXTRA_TEXT, "Ibn e Ilyas Home setup code:\n" + encodeSetup(n.room, n.ip, n.token))
@@ -114,7 +115,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         }
         item {
             Column {
-                OutlinedButton(onClick = { pasteOpen = true }, modifier = Modifier.fillMaxWidth()) { Text("Paste setup code") }
+                Button(onClick = { pasteOpen = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E7FE0), contentColor = Color.White), modifier = Modifier.fillMaxWidth().height(50.dp)) { Text("Paste setup code") }
                 if (pasteMsg.isNotEmpty()) Text(pasteMsg, style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -153,6 +154,7 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
             Button(
                 onClick = { vm.addNode(room, ip, token); room = ""; ip = ""; token = "" },
                 enabled = room.isNotBlank() && ip.isNotBlank() && token.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Add ESP32") }
         }

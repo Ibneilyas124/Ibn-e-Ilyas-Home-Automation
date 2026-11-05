@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.data.Found
@@ -45,7 +46,7 @@ fun DiscoverySection(vm: HomeViewModel) {
         )
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(
+        Button(
             onClick = {
                 found.clear()
                 scanned = false
@@ -55,6 +56,7 @@ fun DiscoverySection(vm: HomeViewModel) {
                 )
             },
             enabled = !scanning,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text(if (scanning) "Scanning..." else "Scan for ESP32 on Wi-Fi") }
         found.forEach { f ->
