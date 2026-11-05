@@ -67,11 +67,16 @@ fun StatTile(
         modifier.clip(RoundedCornerShape(24.dp)).background(container).padding(16.dp)
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.height(6.dp))
+            Box(
+                Modifier.size(36.dp).clip(RoundedCornerShape(50)).background(content.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.height(10.dp))
         }
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = content)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.75f))
+        Text(label, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.9f))
     }
 }
 

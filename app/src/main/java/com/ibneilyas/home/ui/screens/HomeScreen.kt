@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,8 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
     val msg by vm.sceneMessage.collectAsState()
     val cs = MaterialTheme.colorScheme
     val haptic = LocalHapticFeedback.current
+    val ctrlOff = !d.mockMode && d.nodes.isNotEmpty() && d.onlineNodes < d.nodes.size
+    val ctrlColor = if (ctrlOff) Color(0xFFC62828) else Color(0xFF12A150)
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 96.dp),
@@ -64,11 +67,11 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatTile(
                     "Controllers", "${d.onlineNodes}/${d.nodes.size} online", Modifier.weight(1f),
-                    container = cs.primaryContainer, content = cs.onPrimaryContainer, icon = Icons.Filled.Memory
+                    container = ctrlColor, content = Color.White, icon = Icons.Filled.Memory
                 )
                 StatTile(
                     "Rooms", "${d.rooms.size}", Modifier.weight(1f),
-                    container = cs.secondaryContainer, content = cs.onSecondaryContainer, icon = Icons.Filled.MeetingRoom
+                    container = Color(0xFF1E7FE0), content = Color.White, icon = Icons.Filled.MeetingRoom
                 )
             }
         }
@@ -76,11 +79,11 @@ fun HomeScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatTile(
                     "Active now", "${d.activeCount}", Modifier.weight(1f),
-                    container = cs.tertiaryContainer, content = cs.onTertiaryContainer, icon = Icons.Filled.Bolt
+                    container = Color(0xFFFFB020), content = Color(0xFF2B1A00), icon = Icons.Filled.Bolt
                 )
                 StatTile(
                     "Connection", if (d.mockMode) "Mock mode" else "Wi-Fi", Modifier.weight(1f),
-                    container = cs.surfaceVariant, content = cs.onSurfaceVariant, icon = Icons.Filled.Wifi
+                    container = Color(0xFF7C4DDB), content = Color.White, icon = Icons.Filled.Wifi
                 )
             }
         }
