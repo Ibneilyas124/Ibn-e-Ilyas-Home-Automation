@@ -17,8 +17,6 @@ import com.ibneilyas.home.ui.HomeViewModel
 @Composable
 fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
     val d by vm.data.collectAsState()
-    val subtitle by vm.subtitle.collectAsState()
-    var sub by remember(subtitle) { mutableStateOf(subtitle) }
     var msg by remember { mutableStateOf("") }
     val ctx = LocalContext.current
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -51,20 +49,6 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
             OutlinedButton(onClick = { vm.useMock() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Mock mode") }
             OutlinedButton(onClick = { vm.useReal() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Real ESP32 mode") }
             OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
-        }
-        SettingsCard {
-            Text("Home subtitle", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(value = sub, onValueChange = { sub = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            Button(
-                onClick = { vm.setSubtitle(sub) },
-                enabled = sub.isNotBlank() && sub.trim() != subtitle,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) { Text("Save subtitle") }
-            Text(
-                "The company name is fixed and cannot be changed.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
         SettingsCard { AppearanceSection(vm) }
         SettingsCard {
