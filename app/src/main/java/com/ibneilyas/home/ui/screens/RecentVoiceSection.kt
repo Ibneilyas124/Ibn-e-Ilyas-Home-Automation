@@ -7,10 +7,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.ibneilyas.home.ui.HomeViewModel
 import java.text.DateFormat
 import java.util.Date
+
+private val RvBlue = Color(0xFF1E7FE0)
+private val RvGreen = Color(0xFF12A150)
+private val RvRed = Color(0xFFE24B4A)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rvChip() = AssistChipDefaults.assistChipColors(containerColor = RvBlue, labelColor = Color.White)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +41,7 @@ fun RecentVoiceSection(vm: HomeViewModel) {
                                 row.forEach { t ->
                                     AssistChip(
                                         onClick = { vm.addCorrection(w, t); msg = "Saved: $w \u2192 $t. Try the command again."; teaching = null },
-                                        label = { Text(t) }
+                                        label = { Text(t) }, colors = rvChip()
                                     )
                                 }
                             }
@@ -64,13 +73,13 @@ fun RecentVoiceSection(vm: HomeViewModel) {
                     Text("Heard:", style = MaterialTheme.typography.labelSmall)
                     e.heard.split(" ").filter { it.isNotBlank() }.distinct().chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            row.forEach { w -> AssistChip(onClick = { teaching = w }, label = { Text(w) }) }
+                            row.forEach { w -> AssistChip(onClick = { teaching = w }, label = { Text(w) }, colors = rvChip()) }
                         }
                     }
                 }
             }
         }
-        if (list.isNotEmpty()) TextButton(onClick = { vm.clearVoiceLog(); tick++ }) { Text("Clear list") }
-        if (msg.isNotEmpty()) Text(msg, color = MaterialTheme.colorScheme.primary)
+        if (list.isNotEmpty()) TextButton(onClick = { vm.clearVoiceLog(); tick++ }, colors = ButtonDefaults.textButtonColors(contentColor = RvRed)) { Text("Clear list") }
+        if (msg.isNotEmpty()) Text(msg, color = RvGreen)
     }
 }
