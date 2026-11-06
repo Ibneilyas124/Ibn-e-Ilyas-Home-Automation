@@ -78,7 +78,7 @@ fun HomeTheme(dark: Boolean = true, accentKey: String = "blue", content: @Compos
         onSurfaceVariant = Color(0xFF6A5B8C),
         outline = Color(0xFF9A8DB8),
         outlineVariant = Color(0xFFDDD3F2),
-        surfaceTint = Color.Transparent
+        surfaceTint = Color.White
     )
     val view = LocalView.current
     if (!view.isInEditMode) {
