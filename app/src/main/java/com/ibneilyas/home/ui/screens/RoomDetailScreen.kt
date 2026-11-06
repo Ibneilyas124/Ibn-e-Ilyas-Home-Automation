@@ -69,26 +69,43 @@ fun RoomDetailScreen(roomId: String, vm: HomeViewModel, onSchedules: () -> Unit 
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(room.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    NodeStatus(node?.online)
-                    if (node != null && !node.online) {
-                        Text(
-                            "Last seen: ${node.lastSeenMinutes} min ago",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+            Column {
+                Row(Modifier.backHeader(), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = backHeaderTint())
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(room.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = backHeaderText())
+                        if (!isLightHeader()) {
+                            NodeStatus(node?.online)
+                            if (node != null && !node.online) {
+                                Text(
+                                    "Last seen: ${node.lastSeenMinutes} min ago",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                    IconButton(onClick = { edit = !edit }) {
+                        Icon(
+                            if (edit) Icons.Filled.Check else Icons.Filled.Edit,
+                            contentDescription = if (edit) "Done editing" else "Edit",
+                            tint = backHeaderTint()
                         )
                     }
                 }
-                IconButton(onClick = { edit = !edit }) {
-                    Icon(
-                        if (edit) Icons.Filled.Check else Icons.Filled.Edit,
-                        contentDescription = if (edit) "Done editing" else "Edit"
-                    )
+                if (isLightHeader()) {
+                    Column(Modifier.padding(start = 12.dp, top = 8.dp)) {
+                        NodeStatus(node?.online)
+                        if (node != null && !node.online) {
+                            Text(
+                                "Last seen: ${node.lastSeenMinutes} min ago",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }

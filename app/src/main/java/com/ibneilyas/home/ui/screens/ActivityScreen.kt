@@ -99,7 +99,7 @@ fun ActivityScreen(vm: HomeViewModel, onBack: () -> Unit) {
             val whenText = if (e.t > 0) DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(e.t * 1000)) else "time unknown"
             Card(Modifier.fillMaxWidth().padding(start = 12.dp)) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("${e.device} (${e.room}) \u2192 ${if (e.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold, color = if (e.on) SGreen else SAmber)
+                    Text("${e.device} (${e.room}) \u2192 ${if (e.on) "ON" else "OFF"}", fontWeight = FontWeight.SemiBold, color = if (e.on) SGreen else if (isLightHeader()) Color(0xFFB45309) else SAmber)
                     Text(srcName(e.src) + "  \u2022  " + whenText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
