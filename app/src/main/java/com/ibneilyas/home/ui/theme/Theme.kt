@@ -64,20 +64,20 @@ fun HomeTheme(dark: Boolean = true, accentKey: String = "blue", content: @Compos
         onPrimaryContainer = lerp(a, Color.Black, 0.7f),
         secondary = Color(0xFF0E7A47),
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFCDF3DF),
-        onSecondaryContainer = Color(0xFF04301B),
+        secondaryContainer = Color(0xFFE1D5F7),
+        onSecondaryContainer = Color(0xFF4F2AA8),
         tertiary = Color(0xFF5E4BB6),
         onTertiary = Color.White,
         tertiaryContainer = Color(0xFFE8E0FF),
         onTertiaryContainer = Color(0xFF1D1240),
-        background = Color(0xFFF4F6F8),
-        onBackground = Color(0xFF14171C),
+        background = Color(0xFFEFE9FB),
+        onBackground = Color(0xFF241647),
         surface = Color.White,
-        onSurface = Color(0xFF14171C),
-        surfaceVariant = Color(0xFFE3E8ED),
-        onSurfaceVariant = Color(0xFF4A5560),
-        outline = Color(0xFF8A949E),
-        outlineVariant = Color(0xFFD0D6DC)
+        onSurface = Color(0xFF241647),
+        surfaceVariant = Color(0xFFE6DEF7),
+        onSurfaceVariant = Color(0xFF6A5B8C),
+        outline = Color(0xFF9A8DB8),
+        outlineVariant = Color(0xFFDDD3F2)
     )
     val view = LocalView.current
     if (!view.isInEditMode) {

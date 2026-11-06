@@ -17,6 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -30,6 +34,7 @@ import com.ibneilyas.home.ui.components.TextDialog
 fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
     val nodes by vm.nodes.collectAsState()
     val d by vm.data.collectAsState()
+    val isDark by vm.dark.collectAsState()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     var room by remember { mutableStateOf("") }
     var ip by remember { mutableStateOf("") }
@@ -56,7 +61,16 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Devices", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { devTaps++ })
+            if (isDark) {
+                Text("Devices", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { devTaps++ })
+            } else {
+                Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF7C4DDB), Color(0xFF4F2AA8)))).padding(horizontal = 20.dp, vertical = 20.dp)) {
+                    Column {
+                        Text("Devices", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.clickable { devTaps++ })
+                        Text(nodes.size.toString() + (if (nodes.size == 1) " controller" else " controllers"), style = MaterialTheme.typography.bodySmall, color = Color(0xFFDDD0F7))
+                    }
+                }
+            }
             if (d.mockMode) {
                 Text(
                     "Mock mode is active. Add an ESP32 to use real mode.",
@@ -69,9 +83,10 @@ fun DevicesScreen(vm: HomeViewModel, onSchedules: (String) -> Unit) {
             Card(
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = if (isDark) null else BorderStroke(1.dp, Color(0xFFE1D8F5)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.then(if (isDark) Modifier else Modifier.drawBehind { drawRect(Color(0xFF1E7FE0), size = Size(6.dp.toPx(), size.height)) }).padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val cs = MaterialTheme.colorScheme
                     val boxBg = Color(0xFF1E7FE0)
