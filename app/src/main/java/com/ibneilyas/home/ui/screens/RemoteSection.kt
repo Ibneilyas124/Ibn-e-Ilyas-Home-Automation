@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -14,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ fun RemoteSection(vm: HomeViewModel) {
                 vm.setRemote(host, user, pass)
                 msg = if (host.isNotBlank() && user.isNotBlank() && pass.isNotEmpty()) "Saved. Remote is on." else "Saved. Remote is off."
             },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12A150), contentColor = Color.White),
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) { Text("Save remote settings") }
         if (msg.isNotEmpty()) Text(msg, style = MaterialTheme.typography.bodySmall)
