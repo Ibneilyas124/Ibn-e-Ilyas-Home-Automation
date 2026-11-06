@@ -28,7 +28,7 @@ fun RoomsScreen(vm: HomeViewModel, onOpenRoom: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Rooms", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            PageHeader("Rooms", vm)
             Spacer(Modifier.height(8.dp))
         }
         items(d.rooms, key = { it.id }) { room ->

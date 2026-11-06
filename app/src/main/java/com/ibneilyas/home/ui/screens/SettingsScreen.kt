@@ -50,7 +50,7 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        PageHeader("Settings", vm)
         SettingsCard {
             CardHeader("Mode", SBlue, Icons.Default.Settings)
             Text(

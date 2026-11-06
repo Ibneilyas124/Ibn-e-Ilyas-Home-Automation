@@ -41,7 +41,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Scenes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            PageHeader("Scenes", vm)
             msg?.let { Text(it, color = Color(0xFF12A150)) }
         }
         item {
