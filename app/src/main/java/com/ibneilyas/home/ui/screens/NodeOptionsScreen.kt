@@ -219,11 +219,11 @@ fun NodeOptionsScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
             .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+        Row(Modifier.backHeader(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = backHeaderTint()) }
             Column {
-                Text("ESP32 options", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(cfg.room + "  \u2022  " + cfg.ip, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("ESP32 options", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = backHeaderText())
+                Text(cfg.room + "  \u2022  " + cfg.ip, color = backHeaderSub())
             }
         }
         if (status.isNotEmpty()) {

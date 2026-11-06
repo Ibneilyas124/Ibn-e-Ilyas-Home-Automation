@@ -75,9 +75,9 @@ fun ActivityScreen(vm: HomeViewModel, onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
-                Text("Activity history", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Row(Modifier.backHeader(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = backHeaderTint()) }
+                Text("Activity history", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = backHeaderText())
             }
         }
         if (status.isNotEmpty()) item { Text(status, color = if (status.contains("not reachable")) Color(0xFFE24B4A) else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp)) }

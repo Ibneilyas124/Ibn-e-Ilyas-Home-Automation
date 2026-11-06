@@ -111,9 +111,9 @@ fun SchedulesHubScreen(roomId: String?, vm: HomeViewModel, onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
-                Text(if (room != null) "Schedules - " + room.name else "Schedules", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Row(Modifier.backHeader(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = backHeaderTint()) }
+                Text(if (room != null) "Schedules - " + room.name else "Schedules", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = backHeaderText())
             }
         }
         item {

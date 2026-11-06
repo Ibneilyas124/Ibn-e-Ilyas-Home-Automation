@@ -87,11 +87,11 @@ fun SchedulesScreen(nodeId: String, vm: HomeViewModel, onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            Row(Modifier.backHeader(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = backHeaderTint()) }
                 Column {
-                    Text("Schedules", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text(cfg.room, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Schedules", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = backHeaderText())
+                    Text(cfg.room, color = backHeaderSub())
                 }
             }
         }
