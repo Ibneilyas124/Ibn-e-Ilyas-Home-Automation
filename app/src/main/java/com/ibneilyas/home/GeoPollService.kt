@@ -33,6 +33,7 @@ class GeoPollService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startFg()
         wasInside = true
+        handler.removeCallbacks(poll)
         handler.post(poll)
         HomeGeo.glog(this, "poll: started")
         return START_STICKY
