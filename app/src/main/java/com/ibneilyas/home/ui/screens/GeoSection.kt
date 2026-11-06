@@ -148,10 +148,13 @@ fun GeoSection(vm: HomeViewModel) {
                     msg = if (GeoRunService.start(ctx)) "Test started, the scene runs in a few seconds" else "Could not start the service"
                 }
             }) { Text("Test now (run arrival scene)") }
-            TextButton(onClick = { status = HomeGeo.status(ctx) }) { Text("Status: $status (tap to refresh)") }
+            TextButton(colors = ButtonDefaults.textButtonColors(contentColor = SBlue), onClick = { status = HomeGeo.status(ctx) }) { Text("Status: $status (tap to refresh)") }
             val lg = HomeGeo.logText(ctx)
             Text(if (lg.isEmpty()) "Geofence log: empty" else "Geofence log:\n" + lg, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (msg.isNotEmpty()) Text(msg, color = SGreen)
+            if (msg.isNotEmpty()) {
+                val bad = listOf("not available", "error", "first", "denied", "Open app settings", "Could not").any { msg.contains(it) }
+                Text(msg, color = if (bad) Color(0xFFE24B4A) else SGreen)
+            }
     }
 }
 
