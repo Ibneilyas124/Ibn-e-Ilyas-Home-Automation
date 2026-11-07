@@ -59,7 +59,7 @@ fun SettingsScreen(vm: HomeViewModel, onActivity: () -> Unit = {}) {
             )
             Button(onClick = { vm.useMock() }, colors = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Mock mode") }
             Button(onClick = { vm.useReal() }, colors = ButtonDefaults.buttonColors(containerColor = SBlue, contentColor = Color.White), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Use Real ESP32 mode") }
-            OutlinedButton(onClick = { vm.restoreHidden() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
+            OutlinedButton(onClick = { vm.restoreHidden() }, colors = if (isLightHeader()) ButtonDefaults.outlinedButtonColors(contentColor = SViolet) else ButtonDefaults.outlinedButtonColors(), modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Restore hidden devices") }
         }
         SettingsCard { AppearanceSection(vm) }
         SettingsCard {

@@ -99,7 +99,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
                     vm.addScene("All Lights OFF", lights)
                 },
                 enabled = d.appliances.any { it.type == ApplianceType.LIGHT },
-                colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12335E), contentColor = Color(0xFF8CC4FF)),
+                colors = ButtonDefaults.filledTonalButtonColors(containerColor = if (isLightHeader()) SBlue else Color(0xFF12335E), contentColor = if (isLightHeader()) Color.White else Color(0xFF8CC4FF)),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Create All Lights OFF") }
         }
@@ -107,7 +107,7 @@ fun ScenesScreen(vm: HomeViewModel, onSchedules: () -> Unit = {}) {
             FilledTonalButton(
                 onClick = { vm.addScene("All OFF", d.appliances.map { SceneAction(it.id, false) }) },
                 enabled = d.appliances.isNotEmpty() && scenes.none { it.name == "All OFF" },
-                colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(0xFF12335E), contentColor = Color(0xFF8CC4FF)),
+                colors = ButtonDefaults.filledTonalButtonColors(containerColor = if (isLightHeader()) SBlue else Color(0xFF12335E), contentColor = if (isLightHeader()) Color.White else Color(0xFF8CC4FF)),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Create All OFF") }
         }
