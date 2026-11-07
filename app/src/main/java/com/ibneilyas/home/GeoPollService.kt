@@ -66,7 +66,7 @@ class GeoPollService : Service() {
             LocationServices.getFusedLocationProviderClient(this)
                 .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
                 .addOnSuccessListener { loc ->
-                    if (loc == null) return@addOnSuccessListener
+                    if (loc == null) { HomeGeo.glog(this, "poll: no location"); return@addOnSuccessListener }
                     val r = FloatArray(1)
                     Location.distanceBetween(loc.latitude, loc.longitude, cfg.lat, cfg.lon, r)
                     val inside = r[0] <= cfg.radius

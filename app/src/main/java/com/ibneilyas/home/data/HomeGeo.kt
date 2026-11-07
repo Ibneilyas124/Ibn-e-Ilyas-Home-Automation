@@ -40,7 +40,7 @@ object HomeGeo {
         try {
             val t = java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.US).format(java.util.Date())
             val old = sp(ctx).getString("glog", "") ?: ""
-            val lines = (old.split("\n").filter { it.isNotEmpty() } + "$t $text").takeLast(12)
+            val lines = (old.split("\n").filter { it.isNotEmpty() } + "$t $text").takeLast(60)
             sp(ctx).edit().putString("glog", lines.joinToString("\n")).apply()
         } catch (e: Exception) { }
     }

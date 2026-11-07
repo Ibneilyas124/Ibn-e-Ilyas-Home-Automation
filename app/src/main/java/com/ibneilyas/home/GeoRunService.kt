@@ -35,6 +35,7 @@ class GeoRunService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        HomeGeo.glog(this, "service: started")
         try {
             startFg()
         } catch (e: Exception) {
