@@ -15,6 +15,7 @@ class GeoReceiver : BroadcastReceiver() {
         HomeGeo.glog(ctx, "receiver: transition " + ev.geofenceTransition + " (1=enter)")
         if (ev.geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) { HomeGeo.glog(ctx, "receiver: exited home area"); return }
         if (ev.geofenceTransition != Geofence.GEOFENCE_TRANSITION_ENTER) return
+        if (HomeGeo.justRegistered(ctx)) { HomeGeo.glog(ctx, "receiver: enter ignored, geofence was just registered"); return }
         HomeGeo.notifyArrived(ctx)
     }
 }

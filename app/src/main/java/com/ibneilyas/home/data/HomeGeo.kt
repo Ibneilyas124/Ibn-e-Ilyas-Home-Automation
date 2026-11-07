@@ -134,6 +134,11 @@ object HomeGeo {
     fun setAuto(ctx: Context, v: Boolean) { sp(ctx).edit().putBoolean("auto", v).apply() }
     fun clearLast(ctx: Context) { sp(ctx).edit().remove("last").apply() }
 
+    fun justRegistered(ctx: Context): Boolean {
+        val t = sp(ctx).getLong("regat", 0L)
+        return t > 0L && System.currentTimeMillis() - t < 15000L
+    }
+
     fun notifyArrived(ctx: Context, allowAuto: Boolean = true) {
         try {
             val c = load(ctx) ?: return
